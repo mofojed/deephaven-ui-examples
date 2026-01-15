@@ -80,8 +80,6 @@ def _validate_config(config: ChartConfig) -> list[str]:
         if not config.get("values"):
             errors.append("values is required for pie charts")
     elif chart_type == "histogram":
-        placeholder_msg = "Select X or Y column to preview chart"
-    elif chart_type in ("candlestick", "ohlc"):
         # Histogram needs at least x OR y
         if not config.get("x") and not config.get("y"):
             errors.append("x or y is required for histogram charts")
@@ -266,8 +264,6 @@ def make_chart(table: Table, config: ChartConfig):
     elif chart_type == "pie":
         return _make_pie(table, config)
     elif chart_type == "histogram":
-        placeholder_msg = "Select X or Y column to preview chart"
-    elif chart_type in ("candlestick", "ohlc"):
         return _make_histogram(table, config)
     elif chart_type == "box":
         return _make_box(table, config)
@@ -560,8 +556,6 @@ def chart_builder(table: Table) -> ui.Element:
     elif chart_type == "pie":
         can_create_chart = bool(names_col and values_col)
     elif chart_type == "histogram":
-        placeholder_msg = "Select X or Y column to preview chart"
-    elif chart_type in ("candlestick", "ohlc"):
         can_create_chart = bool(x_col or y_col)  # Only need one
     elif chart_type in ("box", "violin", "strip", "density_heatmap"):
         can_create_chart = bool(x_col and y_col)

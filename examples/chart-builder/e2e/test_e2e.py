@@ -119,3 +119,126 @@ class TestChartBuilderE2E:
         """Test that the title text field is visible."""
         title_field = widget_page.locator("text=Chart Title")
         expect(title_field).to_be_visible()
+
+
+@pytest.fixture
+def ohlc_widget_page(page: Page) -> Page:
+    """Navigate to the chart_builder_demo widget and select OHLC dataset."""
+    url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+    page.goto(url, timeout=30000)
+    # Wait for the chart builder UI to load
+    page.wait_for_selector("text=Chart Type", timeout=15000)
+    
+    # Select the OHLC sample dataset
+    dataset_picker = page.locator("button:has-text('Iris')")
+    dataset_picker.click()
+    # Use the popover menu item specifically
+    page.get_by_test_id("popover").get_by_text("Stocks OHLC (1min)").click()
+    page.wait_for_timeout(1000)  # Wait for dataset to load
+    
+    return page
+
+
+@pytest.mark.e2e
+class TestOHLCChartE2E:
+    """End-to-end tests for OHLC and Candlestick charts."""
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_candlestick_chart_renders(self, ohlc_widget_page: Page):
+        """Test that candlestick chart renders with OHLC data."""
+        page = ohlc_widget_page
+        
+        # Select Candlestick chart type
+        chart_type_button = page.locator("button:has-text('Scatter')")
+        chart_type_button.click()
+        # Use the popover menu item specifically
+        page.get_by_test_id("popover").get_by_text("Candlestick").click()
+        page.wait_for_timeout(500)
+        
+        # Select X column (BinnedTimestamp)
+        x_picker = page.get_by_role("button", name="X (Date/Time)")
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("BinnedTimestamp").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Open column
+        open_picker = page.get_by_role("button", name="Open")
+        open_picker.click()
+        page.get_by_test_id("popover").get_by_text("Open").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select High column
+        high_picker = page.get_by_role("button", name="High")
+        high_picker.click()
+        page.get_by_test_id("popover").get_by_text("High").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Low column
+        low_picker = page.get_by_role("button", name="Low")
+        low_picker.click()
+        page.get_by_test_id("popover").get_by_text("Low").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Close column
+        close_picker = page.get_by_role("button", name="Close")
+        close_picker.click()
+        page.get_by_test_id("popover").get_by_text("Close").first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered (check for plotly chart element)
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_ohlc_chart_renders(self, ohlc_widget_page: Page):
+        """Test that OHLC chart renders with OHLC data."""
+        page = ohlc_widget_page
+        
+        # Select OHLC chart type
+        chart_type_button = page.locator("button:has-text('Scatter')")
+        chart_type_button.click()
+        # Use the popover menu item specifically - OHLC is exact match
+        page.get_by_test_id("popover").get_by_text("OHLC", exact=True).click()
+        page.wait_for_timeout(500)
+        
+        # Select X column (BinnedTimestamp)
+        x_picker = page.get_by_role("button", name="X (Date/Time)")
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("BinnedTimestamp").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Open column
+        open_picker = page.get_by_role("button", name="Open")
+        open_picker.click()
+        page.get_by_test_id("popover").get_by_text("Open").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select High column
+        high_picker = page.get_by_role("button", name="High")
+        high_picker.click()
+        page.get_by_test_id("popover").get_by_text("High").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Low column
+        low_picker = page.get_by_role("button", name="Low")
+        low_picker.click()
+        page.get_by_test_id("popover").get_by_text("Low").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Close column
+        close_picker = page.get_by_role("button", name="Close")
+        close_picker.click()
+        page.get_by_test_id("popover").get_by_text("Close").first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
