@@ -35,6 +35,21 @@ MAP_CENTER_PRESETS = [
     {"key": "custom", "label": "Custom..."},
 ]
 
+# Map style options for tile-based maps
+MAP_STYLE_OPTIONS = [
+    {"key": "", "label": "(Default)"},
+    {"key": "open-street-map", "label": "Open Street Map"},
+    {"key": "carto-positron", "label": "Carto Positron (Light)"},
+    {"key": "carto-darkmatter", "label": "Carto Dark Matter"},
+    {"key": "carto-voyager", "label": "Carto Voyager"},
+    {"key": "streets", "label": "Streets"},
+    {"key": "outdoors", "label": "Outdoors"},
+    {"key": "light", "label": "Light"},
+    {"key": "dark", "label": "Dark"},
+    {"key": "satellite", "label": "Satellite"},
+    {"key": "satellite-streets", "label": "Satellite Streets"},
+]
+
 
 # =============================================================================
 # Type Definitions
@@ -103,6 +118,7 @@ class ChartConfig(TypedDict):
     radius: NotRequired[int]
     zoom: NotRequired[int]
     center: NotRequired[dict[str, float]]  # {"lat": float, "lon": float}
+    map_style: NotRequired[str]
 
 
 # =============================================================================
@@ -544,6 +560,8 @@ def _make_scatter_map(table: Table, config: ChartConfig):
         kwargs["zoom"] = config["zoom"]
     if config.get("center"):
         kwargs["center"] = config["center"]
+    if config.get("map_style"):
+        kwargs["map_style"] = config["map_style"]
     if config.get("title"):
         kwargs["title"] = config["title"]
     return dx.scatter_map(table, **kwargs)
@@ -560,6 +578,8 @@ def _make_line_map(table: Table, config: ChartConfig):
         kwargs["zoom"] = config["zoom"]
     if config.get("center"):
         kwargs["center"] = config["center"]
+    if config.get("map_style"):
+        kwargs["map_style"] = config["map_style"]
     if config.get("title"):
         kwargs["title"] = config["title"]
     return dx.line_map(table, **kwargs)
@@ -576,6 +596,8 @@ def _make_density_map(table: Table, config: ChartConfig):
         kwargs["zoom"] = config["zoom"]
     if config.get("center"):
         kwargs["center"] = config["center"]
+    if config.get("map_style"):
+        kwargs["map_style"] = config["map_style"]
     if config.get("title"):
         kwargs["title"] = config["title"]
     return dx.density_map(table, **kwargs)
@@ -1061,6 +1083,7 @@ def chart_builder(table: Table) -> ui.Element:
     center_preset, set_center_preset = ui.use_state("none")
     center_lat, set_center_lat = ui.use_state(0.0)
     center_lon, set_center_lon = ui.use_state(0.0)
+    map_style, set_map_style = ui.use_state("")
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -1282,6 +1305,8 @@ def chart_builder(table: Table) -> ui.Element:
             config["center"] = FLIGHT_CENTER
         elif center_preset == "custom":
             config["center"] = {"lat": center_lat, "lon": center_lon}
+        if map_style:
+            config["map_style"] = map_style
         if chart_type == "scatter_map":
             if by_cols:
                 config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
@@ -1818,6 +1843,14 @@ def chart_builder(table: Table) -> ui.Element:
                 gap="size-100",
                 width="100%",
             ) if chart_type in ("scatter_map", "line_map", "density_map") and center_preset == "custom" else None,
+            # Map style selection for tile-based maps
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in MAP_STYLE_OPTIONS],
+                label="Map Style",
+                selected_key=map_style,
+                on_selection_change=set_map_style,
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
             
             # Group by (for charts that support it - not pie, density_heatmap, financial, or hierarchical)
             ui.flex(
@@ -2034,6 +2067,7 @@ def chart_builder_app() -> ui.Element:
     center_preset, set_center_preset = ui.use_state("none")
     center_lat, set_center_lat = ui.use_state(0.0)
     center_lon, set_center_lon = ui.use_state(0.0)
+    map_style, set_map_style = ui.use_state("")
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -2087,6 +2121,7 @@ def chart_builder_app() -> ui.Element:
         set_center_preset("none")
         set_center_lat(0.0)
         set_center_lon(0.0)
+        set_map_style("")
     
     # Get column names from table
     columns = _get_column_names(table)
@@ -2262,6 +2297,8 @@ def chart_builder_app() -> ui.Element:
             config["center"] = FLIGHT_CENTER
         elif center_preset == "custom":
             config["center"] = {"lat": center_lat, "lon": center_lon}
+        if map_style:
+            config["map_style"] = map_style
         if chart_type == "scatter_map":
             if by_cols:
                 config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
@@ -2867,6 +2904,14 @@ def chart_builder_app() -> ui.Element:
                 gap="size-100",
                 width="100%",
             ) if chart_type in ("scatter_map", "line_map", "density_map") and center_preset == "custom" else None,
+            # Map style selection for tile-based maps
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in MAP_STYLE_OPTIONS],
+                label="Map Style",
+                selected_key=map_style,
+                on_selection_change=set_map_style,
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
             
             # Group by (for charts that support it - not pie, density_heatmap, OHLC, or hierarchical charts)
             ui.flex(
