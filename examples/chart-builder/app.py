@@ -29,7 +29,8 @@ ChartType = Literal[
     "scatter_3d", "line_3d",
     "scatter_polar", "line_polar",
     "scatter_ternary", "line_ternary",
-    "timeline"
+    "timeline",
+    "scatter_geo", "line_geo", "scatter_map", "line_map", "density_map"
 ]
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
 Orientation = Literal["v", "h"]
@@ -75,6 +76,13 @@ class ChartConfig(TypedDict):
     # Timeline chart options
     x_start: NotRequired[str]
     x_end: NotRequired[str]
+    # Map/Geo chart options
+    lat: NotRequired[str]
+    lon: NotRequired[str]
+    locations: NotRequired[str]
+    locationmode: NotRequired[Literal["ISO-3", "USA-states", "country names"]]
+    radius: NotRequired[int]
+    zoom: NotRequired[int]
 
 
 # =============================================================================
@@ -167,6 +175,18 @@ def _validate_config(config: ChartConfig) -> list[str]:
             errors.append("x_end is required for timeline charts")
         if not config.get("y"):
             errors.append("y is required for timeline charts")
+    elif chart_type in ("scatter_geo", "line_geo"):
+        # Geo charts need lat+lon OR locations
+        has_latlon = config.get("lat") and config.get("lon")
+        has_locations = config.get("locations")
+        if not has_latlon and not has_locations:
+            errors.append(f"lat+lon or locations is required for {chart_type} charts")
+    elif chart_type in ("scatter_map", "line_map", "density_map"):
+        # Map charts require lat and lon
+        if not config.get("lat"):
+            errors.append(f"lat is required for {chart_type} charts")
+        if not config.get("lon"):
+            errors.append(f"lon is required for {chart_type} charts")
     return errors
 
 
@@ -449,6 +469,92 @@ def _make_timeline(table: Table, config: ChartConfig):
     return dx.timeline(table, **kwargs)
 
 
+def _make_scatter_geo(table: Table, config: ChartConfig):
+    """Create a geographic scatter plot on a world map."""
+    kwargs = {}
+    if config.get("lat"):
+        kwargs["lat"] = config["lat"]
+    if config.get("lon"):
+        kwargs["lon"] = config["lon"]
+    if config.get("locations"):
+        kwargs["locations"] = config["locations"]
+    if config.get("locationmode"):
+        kwargs["locationmode"] = config["locationmode"]
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.scatter_geo(table, **kwargs)
+
+
+def _make_line_geo(table: Table, config: ChartConfig):
+    """Create a geographic line plot on a world map."""
+    kwargs = {}
+    if config.get("lat"):
+        kwargs["lat"] = config["lat"]
+    if config.get("lon"):
+        kwargs["lon"] = config["lon"]
+    if config.get("locations"):
+        kwargs["locations"] = config["locations"]
+    if config.get("locationmode"):
+        kwargs["locationmode"] = config["locationmode"]
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.line_geo(table, **kwargs)
+
+
+def _make_scatter_map(table: Table, config: ChartConfig):
+    """Create a scatter plot on a tile-based map."""
+    kwargs = {"lat": config["lat"], "lon": config["lon"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("zoom"):
+        kwargs["zoom"] = config["zoom"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.scatter_map(table, **kwargs)
+
+
+def _make_line_map(table: Table, config: ChartConfig):
+    """Create a line plot on a tile-based map."""
+    kwargs = {"lat": config["lat"], "lon": config["lon"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("zoom"):
+        kwargs["zoom"] = config["zoom"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.line_map(table, **kwargs)
+
+
+def _make_density_map(table: Table, config: ChartConfig):
+    """Create a density heatmap on a tile-based map."""
+    kwargs = {"lat": config["lat"], "lon": config["lon"]}
+    if config.get("z"):
+        kwargs["z"] = config["z"]
+    if config.get("radius"):
+        kwargs["radius"] = config["radius"]
+    if config.get("zoom"):
+        kwargs["zoom"] = config["zoom"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.density_map(table, **kwargs)
+
+
 def make_chart(table: Table, config: ChartConfig):
     """Create a chart from the given table and configuration."""
     errors = _validate_config(config)
@@ -504,6 +610,16 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_line_ternary(table, config)
     elif chart_type == "timeline":
         return _make_timeline(table, config)
+    elif chart_type == "scatter_geo":
+        return _make_scatter_geo(table, config)
+    elif chart_type == "line_geo":
+        return _make_line_geo(table, config)
+    elif chart_type == "scatter_map":
+        return _make_scatter_map(table, config)
+    elif chart_type == "line_map":
+        return _make_line_map(table, config)
+    elif chart_type == "density_map":
+        return _make_density_map(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -537,6 +653,11 @@ CHART_TYPES = [
     {"key": "scatter_ternary", "label": "Scatter Ternary", "icon": "vsCircleFilled"},
     {"key": "line_ternary", "label": "Line Ternary", "icon": "vsGraphLine"},
     {"key": "timeline", "label": "Timeline", "icon": "vsCalendar"},
+    {"key": "scatter_geo", "label": "Scatter Geo", "icon": "vsGlobe"},
+    {"key": "line_geo", "label": "Line Geo", "icon": "vsGlobe"},
+    {"key": "scatter_map", "label": "Scatter Map", "icon": "vsMap"},
+    {"key": "line_map", "label": "Line Map", "icon": "vsMap"},
+    {"key": "density_map", "label": "Density Map", "icon": "vsMap"},
 ]
 
 ORIENTATIONS = [
@@ -570,6 +691,8 @@ DATASETS = [
     {"key": "polar_sample", "label": "Polar Data", "description": "Wind-like polar coordinate data"},
     {"key": "ternary_sample", "label": "Ternary Data", "description": "Composition data (e.g., soil types)"},
     {"key": "timeline_sample", "label": "Timeline", "description": "Project timeline with tasks"},
+    {"key": "flights", "label": "Flights", "description": "Flight tracking with lat/lon positions"},
+    {"key": "outages", "label": "Outages", "description": "Power outage locations with severity"},
 ]
 
 
@@ -808,6 +931,10 @@ def _load_dataset(name: str) -> Table:
         return _create_ternary_sample()
     if name == "timeline_sample":
         return _create_timeline_sample()
+    if name == "flights":
+        return dx.data.flights()
+    if name == "outages":
+        return dx.data.outages()
 
     loaders = {
         "iris": dx.data.iris,
@@ -897,6 +1024,14 @@ def chart_builder(table: Table) -> ui.Element:
     # Timeline chart state
     x_start_col, set_x_start_col = ui.use_state("")
     x_end_col, set_x_end_col = ui.use_state("")
+    
+    # Map/Geo chart state
+    lat_col, set_lat_col = ui.use_state("")
+    lon_col, set_lon_col = ui.use_state("")
+    locations_col, set_locations_col = ui.use_state("")
+    locationmode, set_locationmode = ui.use_state("")
+    radius, set_radius = ui.use_state(15)
+    zoom, set_zoom = ui.use_state(3)
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -1082,6 +1217,53 @@ def chart_builder(table: Table) -> ui.Element:
         if by_cols:
             config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
     
+    # Map/Geo chart config (scatter_geo, line_geo)
+    if chart_type in ("scatter_geo", "line_geo"):
+        if lat_col:
+            config["lat"] = lat_col
+        if lon_col:
+            config["lon"] = lon_col
+        if locations_col:
+            config["locations"] = locations_col
+        if locationmode:
+            config["locationmode"] = locationmode
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if chart_type == "scatter_geo":
+            if size_col:
+                config["size"] = size_col
+            if color_col:
+                config["color"] = color_col
+        elif chart_type == "line_geo":
+            if color_col:
+                config["color"] = color_col
+    
+    # Tile-based map chart config (scatter_map, line_map, density_map)
+    if chart_type in ("scatter_map", "line_map", "density_map"):
+        if lat_col:
+            config["lat"] = lat_col
+        if lon_col:
+            config["lon"] = lon_col
+        if zoom:
+            config["zoom"] = zoom
+        if chart_type == "scatter_map":
+            if by_cols:
+                config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+            if size_col:
+                config["size"] = size_col
+            if color_col:
+                config["color"] = color_col
+        elif chart_type == "line_map":
+            if by_cols:
+                config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+            if color_col:
+                config["color"] = color_col
+        elif chart_type == "density_map":
+            if z_col:
+                config["z"] = z_col
+            if radius:
+                config["radius"] = radius
+    
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -1108,6 +1290,10 @@ def chart_builder(table: Table) -> ui.Element:
         can_create_chart = bool(a_col and b_col and c_col)
     elif chart_type == "timeline":
         can_create_chart = bool(x_start_col and x_end_col and y_col)
+    elif chart_type in ("scatter_geo", "line_geo"):
+        can_create_chart = bool((lat_col and lon_col) or locations_col)
+    elif chart_type in ("scatter_map", "line_map", "density_map"):
+        can_create_chart = bool(lat_col and lon_col)
     
     # Create chart if we have valid configuration
     chart = None
@@ -1423,6 +1609,150 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ) if chart_type == "timeline" else None,
             
+            # Geo chart controls (scatter_geo, line_geo)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Lat",
+                    selected_key=lat_col,
+                    on_selection_change=set_lat_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Lon",
+                    selected_key=lon_col,
+                    on_selection_change=set_lon_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_geo", "line_geo") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Locations",
+                    selected_key=locations_col,
+                    on_selection_change=set_locations_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    ui.item("(None)", key=""),
+                    ui.item("ISO-3", key="ISO-3"),
+                    ui.item("USA-states", key="USA-states"),
+                    ui.item("Country names", key="country names"),
+                    label="Location Mode",
+                    selected_key=locationmode,
+                    on_selection_change=set_locationmode,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_geo", "line_geo") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Size",
+                    selected_key=size_col,
+                    on_selection_change=set_size_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "scatter_geo" else None,
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                label="Color",
+                selected_key=color_col,
+                on_selection_change=set_color_col,
+                width="100%",
+            ) if chart_type == "line_geo" else None,
+            
+            # Tile map chart controls (scatter_map, line_map, density_map)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Lat",
+                    selected_key=lat_col,
+                    on_selection_change=set_lat_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Lon",
+                    selected_key=lon_col,
+                    on_selection_change=set_lon_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Size",
+                    selected_key=size_col,
+                    on_selection_change=set_size_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "scatter_map" else None,
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                label="Color",
+                selected_key=color_col,
+                on_selection_change=set_color_col,
+                width="100%",
+            ) if chart_type == "line_map" else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Z (Intensity)",
+                    selected_key=z_col,
+                    on_selection_change=set_z_col,
+                    flex_grow=1,
+                ),
+                ui.number_field(
+                    label="Radius",
+                    value=radius,
+                    on_change=set_radius,
+                    min_value=1,
+                    max_value=50,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "density_map" else None,
+            ui.number_field(
+                label="Zoom",
+                value=zoom,
+                on_change=set_zoom,
+                min_value=0,
+                max_value=20,
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
+            
             # Group by (for charts that support it - not pie, density_heatmap, financial, or hierarchical)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
@@ -1449,7 +1779,7 @@ def chart_builder(table: Table) -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline") else None,
+            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline", "scatter_geo", "line_geo", "scatter_map", "line_map", "density_map") else None,
             
             # Histogram-specific options
             ui.number_field(
@@ -1535,6 +1865,10 @@ def chart_builder(table: Table) -> ui.Element:
         placeholder_msg = "Select X or Y column to preview chart"
     elif chart_type in ("candlestick", "ohlc"):
         placeholder_msg = "Select X and OHLC columns to preview chart"
+    elif chart_type in ("scatter_geo", "line_geo"):
+        placeholder_msg = "Select Lat+Lon or Locations to preview chart"
+    elif chart_type in ("scatter_map", "line_map", "density_map"):
+        placeholder_msg = "Select Lat and Lon columns to preview chart"
     else:
         placeholder_msg = "Select X and Y columns to preview chart"
     
@@ -1624,6 +1958,14 @@ def chart_builder_app() -> ui.Element:
     x_start_col, set_x_start_col = ui.use_state("")
     x_end_col, set_x_end_col = ui.use_state("")
     
+    # Map/Geo chart state
+    lat_col, set_lat_col = ui.use_state("")
+    lon_col, set_lon_col = ui.use_state("")
+    locations_col, set_locations_col = ui.use_state("")
+    locationmode, set_locationmode = ui.use_state("")
+    radius, set_radius = ui.use_state(15)
+    zoom, set_zoom = ui.use_state(3)
+    
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
         """Update a group by column at a specific index."""
@@ -1668,6 +2010,10 @@ def chart_builder_app() -> ui.Element:
         set_c_col("")
         set_x_start_col("")
         set_x_end_col("")
+        set_lat_col("")
+        set_lon_col("")
+        set_locations_col("")
+        set_locationmode("")
     
     # Get column names from table
     columns = _get_column_names(table)
@@ -1807,6 +2153,53 @@ def chart_builder_app() -> ui.Element:
         if by_cols:
             config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
     
+    # Map/Geo chart config (scatter_geo, line_geo)
+    if chart_type in ("scatter_geo", "line_geo"):
+        if lat_col:
+            config["lat"] = lat_col
+        if lon_col:
+            config["lon"] = lon_col
+        if locations_col:
+            config["locations"] = locations_col
+        if locationmode:
+            config["locationmode"] = locationmode
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if chart_type == "scatter_geo":
+            if size_col:
+                config["size"] = size_col
+            if color_col:
+                config["color"] = color_col
+        elif chart_type == "line_geo":
+            if color_col:
+                config["color"] = color_col
+    
+    # Tile-based map chart config (scatter_map, line_map, density_map)
+    if chart_type in ("scatter_map", "line_map", "density_map"):
+        if lat_col:
+            config["lat"] = lat_col
+        if lon_col:
+            config["lon"] = lon_col
+        if zoom:
+            config["zoom"] = zoom
+        if chart_type == "scatter_map":
+            if by_cols:
+                config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+            if size_col:
+                config["size"] = size_col
+            if color_col:
+                config["color"] = color_col
+        elif chart_type == "line_map":
+            if by_cols:
+                config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+            if color_col:
+                config["color"] = color_col
+        elif chart_type == "density_map":
+            if z_col:
+                config["z"] = z_col
+            if radius:
+                config["radius"] = radius
+    
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -1833,6 +2226,10 @@ def chart_builder_app() -> ui.Element:
         can_create_chart = bool(a_col and b_col and c_col)
     elif chart_type == "timeline":
         can_create_chart = bool(x_start_col and x_end_col and y_col)
+    elif chart_type in ("scatter_geo", "line_geo"):
+        can_create_chart = bool((lat_col and lon_col) or locations_col)
+    elif chart_type in ("scatter_map", "line_map", "density_map"):
+        can_create_chart = bool(lat_col and lon_col)
     
     chart = None
     error_message = None
@@ -2217,6 +2614,150 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ) if chart_type == "timeline" else None,
             
+            # Geo chart controls (scatter_geo, line_geo)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Lat",
+                    selected_key=lat_col,
+                    on_selection_change=set_lat_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Lon",
+                    selected_key=lon_col,
+                    on_selection_change=set_lon_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_geo", "line_geo") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Locations",
+                    selected_key=locations_col,
+                    on_selection_change=set_locations_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    ui.item("(None)", key=""),
+                    ui.item("ISO-3", key="ISO-3"),
+                    ui.item("USA-states", key="USA-states"),
+                    ui.item("Country names", key="country names"),
+                    label="Location Mode",
+                    selected_key=locationmode,
+                    on_selection_change=set_locationmode,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_geo", "line_geo") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Size",
+                    selected_key=size_col,
+                    on_selection_change=set_size_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "scatter_geo" else None,
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                label="Color",
+                selected_key=color_col,
+                on_selection_change=set_color_col,
+                width="100%",
+            ) if chart_type == "line_geo" else None,
+            
+            # Tile map chart controls (scatter_map, line_map, density_map)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Lat",
+                    selected_key=lat_col,
+                    on_selection_change=set_lat_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Lon",
+                    selected_key=lon_col,
+                    on_selection_change=set_lon_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Size",
+                    selected_key=size_col,
+                    on_selection_change=set_size_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "scatter_map" else None,
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                label="Color",
+                selected_key=color_col,
+                on_selection_change=set_color_col,
+                width="100%",
+            ) if chart_type == "line_map" else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Z (Intensity)",
+                    selected_key=z_col,
+                    on_selection_change=set_z_col,
+                    flex_grow=1,
+                ),
+                ui.number_field(
+                    label="Radius",
+                    value=radius,
+                    on_change=set_radius,
+                    min_value=1,
+                    max_value=50,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "density_map" else None,
+            ui.number_field(
+                label="Zoom",
+                value=zoom,
+                on_change=set_zoom,
+                min_value=0,
+                max_value=20,
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
+            
             # Group by (for charts that support it - not pie, density_heatmap, OHLC, or hierarchical charts)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
@@ -2243,7 +2784,7 @@ def chart_builder_app() -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area", "scatter_3d", "line_3d", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline") else None,
+            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area", "scatter_3d", "line_3d", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline", "scatter_geo", "line_geo", "scatter_map", "line_map", "density_map") else None,
             
             # Histogram-specific options
             ui.number_field(
@@ -2341,6 +2882,10 @@ def chart_builder_app() -> ui.Element:
         placeholder_msg = "Select A, B, and C columns to preview chart"
     elif chart_type == "timeline":
         placeholder_msg = "Select X Start, X End, and Y columns to preview chart"
+    elif chart_type in ("scatter_geo", "line_geo"):
+        placeholder_msg = "Select Lat/Lon or Locations columns to preview chart"
+    elif chart_type in ("scatter_map", "line_map", "density_map"):
+        placeholder_msg = "Select Lat and Lon columns to preview chart"
     else:
         placeholder_msg = "Select X and Y columns to preview chart"
     

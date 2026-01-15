@@ -508,3 +508,128 @@ class TestMakeChartCreation:
         
         chart = make_chart(table, config)
         assert chart is not None
+
+    # ==========================================================================
+    # Phase 7: Map/Geo Charts
+    # ==========================================================================
+    
+    def test_make_scatter_geo_with_lat_lon(self):
+        """Test creating a scatter_geo chart with lat/lon."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.flights()
+        config: ChartConfig = {
+            "chart_type": "scatter_geo",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_scatter_geo_with_size_color(self):
+        """Test creating a scatter_geo chart with size and color."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.flights()
+        config: ChartConfig = {
+            "chart_type": "scatter_geo",
+            "lat": "Lat",
+            "lon": "Lon",
+            "size": "Speed",
+            "color": "Speed",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_line_geo(self):
+        """Test creating a line_geo chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.flights()
+        config: ChartConfig = {
+            "chart_type": "line_geo",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_scatter_map(self):
+        """Test creating a scatter_map chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.flights()
+        config: ChartConfig = {
+            "chart_type": "scatter_map",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_scatter_map_with_size_color_zoom(self):
+        """Test creating a scatter_map chart with options."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.flights()
+        config: ChartConfig = {
+            "chart_type": "scatter_map",
+            "lat": "Lat",
+            "lon": "Lon",
+            "size": "Speed",
+            "color": "Speed",
+            "zoom": 3,
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_line_map(self):
+        """Test creating a line_map chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.flights()
+        config: ChartConfig = {
+            "chart_type": "line_map",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_density_map(self):
+        """Test creating a density_map chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.outages()
+        config: ChartConfig = {
+            "chart_type": "density_map",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_density_map_with_options(self):
+        """Test creating a density_map chart with options."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.outages()
+        config: ChartConfig = {
+            "chart_type": "density_map",
+            "lat": "Lat",
+            "lon": "Lon",
+            "z": "Severity",
+            "radius": 15,
+            "zoom": 2,
+            "title": "Outage Density",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None

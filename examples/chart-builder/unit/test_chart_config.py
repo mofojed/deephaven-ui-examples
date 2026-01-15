@@ -313,3 +313,124 @@ class TestChartConfig:
         }
         errors = validate_config(config)
         assert len(errors) == 0
+
+    # ==========================================================================
+    # Geo Chart Tests (scatter_geo, line_geo)
+    # ==========================================================================
+    
+    def test_get_required_fields_scatter_geo(self):
+        """Test required fields for scatter_geo chart."""
+        # scatter_geo returns empty since it has special validation (lat+lon OR locations)
+        required = get_required_fields("scatter_geo")
+        assert len(required) == 0  # Special validation handles this
+
+    def test_validate_config_valid_scatter_geo_with_lat_lon(self):
+        """Test validation passes for scatter_geo with lat/lon."""
+        config: ChartConfig = {
+            "chart_type": "scatter_geo",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_valid_scatter_geo_with_locations(self):
+        """Test validation passes for scatter_geo with locations."""
+        config: ChartConfig = {
+            "chart_type": "scatter_geo",
+            "locations": "Country",
+            "locationmode": "country names",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_scatter_geo_missing_coords(self):
+        """Test validation fails for scatter_geo without coords or locations."""
+        config: ChartConfig = {"chart_type": "scatter_geo"}
+        errors = validate_config(config)
+        assert len(errors) >= 1
+        assert any("lat" in e.lower() or "lon" in e.lower() or "locations" in e.lower() for e in errors)
+
+    def test_validate_config_valid_line_geo(self):
+        """Test validation passes for line_geo with lat/lon."""
+        config: ChartConfig = {
+            "chart_type": "line_geo",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    # ==========================================================================
+    # Tile Map Chart Tests (scatter_map, line_map, density_map)
+    # ==========================================================================
+    
+    def test_get_required_fields_scatter_map(self):
+        """Test required fields for scatter_map chart."""
+        required = get_required_fields("scatter_map")
+        assert "lat" in required
+        assert "lon" in required
+
+    def test_validate_config_valid_scatter_map(self):
+        """Test validation passes for scatter_map with lat/lon."""
+        config: ChartConfig = {
+            "chart_type": "scatter_map",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_scatter_map_missing_lat(self):
+        """Test validation fails for scatter_map without lat."""
+        config: ChartConfig = {
+            "chart_type": "scatter_map",
+            "lon": "Lon",
+        }
+        errors = validate_config(config)
+        assert len(errors) >= 1
+        assert any("lat" in e.lower() for e in errors)
+
+    def test_validate_config_scatter_map_missing_lon(self):
+        """Test validation fails for scatter_map without lon."""
+        config: ChartConfig = {
+            "chart_type": "scatter_map",
+            "lat": "Lat",
+        }
+        errors = validate_config(config)
+        assert len(errors) >= 1
+        assert any("lon" in e.lower() for e in errors)
+
+    def test_validate_config_valid_line_map(self):
+        """Test validation passes for line_map with lat/lon."""
+        config: ChartConfig = {
+            "chart_type": "line_map",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_valid_density_map(self):
+        """Test validation passes for density_map with lat/lon."""
+        config: ChartConfig = {
+            "chart_type": "density_map",
+            "lat": "Lat",
+            "lon": "Lon",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_density_map_with_options(self):
+        """Test validation passes for density_map with optional params."""
+        config: ChartConfig = {
+            "chart_type": "density_map",
+            "lat": "Lat",
+            "lon": "Lon",
+            "z": "Intensity",
+            "radius": 15,
+            "zoom": 3,
+            "title": "Density Map",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0

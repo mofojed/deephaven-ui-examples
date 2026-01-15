@@ -58,6 +58,40 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_candlestick(table, config)
     elif chart_type == "ohlc":
         return _make_ohlc(table, config)
+    elif chart_type == "treemap":
+        return _make_treemap(table, config)
+    elif chart_type == "sunburst":
+        return _make_sunburst(table, config)
+    elif chart_type == "icicle":
+        return _make_icicle(table, config)
+    elif chart_type == "funnel":
+        return _make_funnel(table, config)
+    elif chart_type == "funnel_area":
+        return _make_funnel_area(table, config)
+    elif chart_type == "scatter_3d":
+        return _make_scatter_3d(table, config)
+    elif chart_type == "line_3d":
+        return _make_line_3d(table, config)
+    elif chart_type == "scatter_polar":
+        return _make_scatter_polar(table, config)
+    elif chart_type == "line_polar":
+        return _make_line_polar(table, config)
+    elif chart_type == "scatter_ternary":
+        return _make_scatter_ternary(table, config)
+    elif chart_type == "line_ternary":
+        return _make_line_ternary(table, config)
+    elif chart_type == "timeline":
+        return _make_timeline(table, config)
+    elif chart_type == "scatter_geo":
+        return _make_scatter_geo(table, config)
+    elif chart_type == "line_geo":
+        return _make_line_geo(table, config)
+    elif chart_type == "scatter_map":
+        return _make_scatter_map(table, config)
+    elif chart_type == "line_map":
+        return _make_line_map(table, config)
+    elif chart_type == "density_map":
+        return _make_density_map(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -365,3 +399,291 @@ def _make_ohlc(table: Table, config: ChartConfig):
     }
     
     return dx.ohlc(table, **kwargs)
+
+
+# =============================================================================
+# Phase 5: Hierarchical Charts
+# =============================================================================
+
+def _make_treemap(table: Table, config: ChartConfig):
+    """Create a treemap chart."""
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+        "parents": config["parents"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.treemap(table, **kwargs)
+
+
+def _make_sunburst(table: Table, config: ChartConfig):
+    """Create a sunburst chart."""
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+        "parents": config["parents"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.sunburst(table, **kwargs)
+
+
+def _make_icicle(table: Table, config: ChartConfig):
+    """Create an icicle chart."""
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+        "parents": config["parents"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.icicle(table, **kwargs)
+
+
+def _make_funnel(table: Table, config: ChartConfig):
+    """Create a funnel chart."""
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.funnel(table, **kwargs)
+
+
+def _make_funnel_area(table: Table, config: ChartConfig):
+    """Create a funnel area chart."""
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.funnel_area(table, **kwargs)
+
+
+# =============================================================================
+# Phase 6: 3D, Polar, Ternary, Timeline Charts
+# =============================================================================
+
+def _make_scatter_3d(table: Table, config: ChartConfig):
+    """Create a 3D scatter chart."""
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+        "z": config["z"],
+    }
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.scatter_3d(table, **kwargs)
+
+
+def _make_line_3d(table: Table, config: ChartConfig):
+    """Create a 3D line chart."""
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+        "z": config["z"],
+    }
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.line_3d(table, **kwargs)
+
+
+def _make_scatter_polar(table: Table, config: ChartConfig):
+    """Create a polar scatter chart."""
+    kwargs = {
+        "r": config["r"],
+        "theta": config["theta"],
+    }
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.scatter_polar(table, **kwargs)
+
+
+def _make_line_polar(table: Table, config: ChartConfig):
+    """Create a polar line chart."""
+    kwargs = {
+        "r": config["r"],
+        "theta": config["theta"],
+    }
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.line_polar(table, **kwargs)
+
+
+def _make_scatter_ternary(table: Table, config: ChartConfig):
+    """Create a ternary scatter chart."""
+    kwargs = {
+        "a": config["a"],
+        "b": config["b"],
+        "c": config["c"],
+    }
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.scatter_ternary(table, **kwargs)
+
+
+def _make_line_ternary(table: Table, config: ChartConfig):
+    """Create a ternary line chart."""
+    kwargs = {
+        "a": config["a"],
+        "b": config["b"],
+        "c": config["c"],
+    }
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.line_ternary(table, **kwargs)
+
+
+def _make_timeline(table: Table, config: ChartConfig):
+    """Create a timeline (Gantt) chart."""
+    kwargs = {
+        "x_start": config["x_start"],
+        "x_end": config["x_end"],
+        "y": config["y"],
+    }
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.timeline(table, **kwargs)
+
+
+# =============================================================================
+# Phase 7: Geo/Map Charts
+# =============================================================================
+
+def _make_scatter_geo(table: Table, config: ChartConfig):
+    """Create a scatter geo chart."""
+    kwargs = {}
+    
+    # Either lat/lon OR locations
+    if config.get("lat") and config.get("lon"):
+        kwargs["lat"] = config["lat"]
+        kwargs["lon"] = config["lon"]
+    if config.get("locations"):
+        kwargs["locations"] = config["locations"]
+    if config.get("locationmode"):
+        kwargs["locationmode"] = config["locationmode"]
+    
+    # Optional
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.scatter_geo(table, **kwargs)
+
+
+def _make_line_geo(table: Table, config: ChartConfig):
+    """Create a line geo chart."""
+    kwargs = {}
+    
+    # Either lat/lon OR locations
+    if config.get("lat") and config.get("lon"):
+        kwargs["lat"] = config["lat"]
+        kwargs["lon"] = config["lon"]
+    if config.get("locations"):
+        kwargs["locations"] = config["locations"]
+    if config.get("locationmode"):
+        kwargs["locationmode"] = config["locationmode"]
+    
+    # Optional
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.line_geo(table, **kwargs)
+
+
+def _make_scatter_map(table: Table, config: ChartConfig):
+    """Create a scatter tile map chart."""
+    kwargs = {
+        "lat": config["lat"],
+        "lon": config["lon"],
+    }
+    
+    # Optional
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("zoom"):
+        kwargs["zoom"] = config["zoom"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.scatter_map(table, **kwargs)
+
+
+def _make_line_map(table: Table, config: ChartConfig):
+    """Create a line tile map chart."""
+    kwargs = {
+        "lat": config["lat"],
+        "lon": config["lon"],
+    }
+    
+    # Optional
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("zoom"):
+        kwargs["zoom"] = config["zoom"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.line_map(table, **kwargs)
+
+
+def _make_density_map(table: Table, config: ChartConfig):
+    """Create a density tile map chart."""
+    kwargs = {
+        "lat": config["lat"],
+        "lon": config["lon"],
+    }
+    
+    # Optional
+    if config.get("z"):
+        kwargs["z"] = config["z"]
+    if config.get("radius"):
+        kwargs["radius"] = config["radius"]
+    if config.get("zoom"):
+        kwargs["zoom"] = config["zoom"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.density_map(table, **kwargs)

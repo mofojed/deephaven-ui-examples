@@ -1,6 +1,6 @@
 # Chart Builder
 
-An interactive chart builder component for Deephaven tables.
+An interactive chart builder component for Deephaven tables with support for 29 chart types.
 
 ## Screenshot
 
@@ -8,13 +8,12 @@ An interactive chart builder component for Deephaven tables.
 
 ## Features
 
-- Select chart type (scatter, line)
-- Choose X and Y columns from the table
-- Optional grouping by a column
-- Chart-type-specific options:
-  - **Scatter**: Size, Symbol, Color columns
-  - **Line**: Show markers, Line shape
+- 29 chart types: scatter, line, bar, area, pie, histogram, box, violin, strip, density_heatmap, candlestick, ohlc, treemap, sunburst, icicle, funnel, funnel_area, scatter_3d, line_3d, scatter_polar, line_polar, scatter_ternary, line_ternary, timeline, scatter_geo, line_geo, scatter_map, line_map, density_map
+- Choose columns from the table schema
+- Multi-level grouping with "Group By"
+- Chart-type-specific options with dynamic UI controls
 - Live chart preview as options change
+- Sample datasets including iris, stocks, tips, gapminder, elections, wind, simple, ohlc_sample, flights, outages
 
 ## Usage
 
@@ -22,9 +21,10 @@ An interactive chart builder component for Deephaven tables.
 exec(open('/data/examples/chart-builder/app.py').read())
 ```
 
-This creates two chart builders:
+This creates:
 
-- `iris_chart_builder` - For the Iris flower dataset
+- `chart_builder_demo` - Full chart builder with dataset selector
+- `iris_chart_builder` - For the Iris flower dataset  
 - `stocks_chart_builder` - For the stocks dataset
 
 ## How It Works
@@ -73,10 +73,15 @@ my_chart_builder = chart_builder(my_table)
 
 ## Supported Chart Types
 
-| Type    | Required | Optional                       |
-| ------- | -------- | ------------------------------ |
-| scatter | x, y     | by, size, symbol, color, title |
-| line    | x, y     | by, markers, line_shape, title |
+| Category | Types |
+| -------- | ----- |
+| Basic | scatter, line, bar, area, pie |
+| Distribution | histogram, box, violin, strip, density_heatmap |
+| Financial | candlestick, ohlc |
+| Hierarchical | treemap, sunburst, icicle, funnel, funnel_area |
+| 3D/Polar/Ternary | scatter_3d, line_3d, scatter_polar, line_polar, scatter_ternary, line_ternary |
+| Map/Geo | scatter_geo, line_geo, scatter_map, line_map, density_map |
+| Other | timeline |
 
 ## Testing
 

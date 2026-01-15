@@ -4,13 +4,21 @@ from typing import Literal, TypedDict, NotRequired
 
 
 # Chart types supported
-ChartType = Literal["scatter", "line", "bar", "area", "pie", "histogram", "box", "violin", "strip", "density_heatmap", "candlestick", "ohlc"]
+ChartType = Literal[
+    "scatter", "line", "bar", "area", "pie", "histogram", "box", "violin", "strip",
+    "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area",
+    "scatter_3d", "line_3d", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline",
+    "scatter_geo", "line_geo", "scatter_map", "line_map", "density_map"
+]
 
 # Line shape options (spline is NOT supported by dx.line)
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
 
 # Bar chart orientation
 Orientation = Literal["v", "h"]
+
+# Location mode for geo charts
+LocationMode = Literal["ISO-3", "USA-states", "country names"]
 
 
 class ChartConfig(TypedDict):
@@ -59,6 +67,33 @@ class ChartConfig(TypedDict):
     low: NotRequired[str]
     close: NotRequired[str]
     
+    # Hierarchical chart options (treemap, sunburst, icicle)
+    parents: NotRequired[str]
+    
+    # 3D chart options
+    z: NotRequired[str]
+    
+    # Polar chart options
+    r: NotRequired[str]
+    theta: NotRequired[str]
+    
+    # Ternary chart options
+    a: NotRequired[str]
+    b: NotRequired[str]
+    c: NotRequired[str]
+    
+    # Timeline chart options
+    x_start: NotRequired[str]
+    x_end: NotRequired[str]
+    
+    # Geo/Map chart options
+    lat: NotRequired[str]
+    lon: NotRequired[str]
+    locations: NotRequired[str]
+    locationmode: NotRequired[LocationMode]
+    radius: NotRequired[int]
+    zoom: NotRequired[int]
+    
     # Axis options
     log_x: NotRequired[bool]
     log_y: NotRequired[bool]
@@ -83,6 +118,22 @@ def get_required_fields(chart_type: ChartType) -> list[str]:
         return ["x", "y"]
     elif chart_type in ("candlestick", "ohlc"):
         return ["x", "open", "high", "low", "close"]
+    elif chart_type in ("treemap", "sunburst", "icicle"):
+        return ["names", "values", "parents"]
+    elif chart_type in ("funnel", "funnel_area"):
+        return ["x", "y"]
+    elif chart_type in ("scatter_3d", "line_3d"):
+        return ["x", "y", "z"]
+    elif chart_type in ("scatter_polar", "line_polar"):
+        return ["r", "theta"]
+    elif chart_type in ("scatter_ternary", "line_ternary"):
+        return ["a", "b", "c"]
+    elif chart_type == "timeline":
+        return ["x_start", "x_end", "y"]
+    elif chart_type in ("scatter_geo", "line_geo"):
+        return []  # lat+lon OR locations, validated separately
+    elif chart_type in ("scatter_map", "line_map", "density_map"):
+        return ["lat", "lon"]
     return []
 
 
@@ -106,6 +157,22 @@ def validate_config(config: ChartConfig) -> list[str]:
     if chart_type == "histogram":
         if not config.get("x") and not config.get("y"):
             errors.append("x or y is required for histogram charts")
+        return errors
+    
+    # Special validation for geo charts (needs lat+lon OR locations)
+    if chart_type in ("scatter_geo", "line_geo"):
+        has_lat_lon = config.get("lat") and config.get("lon")
+        has_locations = config.get("locations")
+        if not has_lat_lon and not has_locations:
+            errors.append(f"lat and lon, OR locations is required for {chart_type} charts")
+        return errors
+    
+    # Special validation for tile map charts (needs lat+lon)
+    if chart_type in ("scatter_map", "line_map", "density_map"):
+        if not config.get("lat"):
+            errors.append(f"lat is required for {chart_type} charts")
+        if not config.get("lon"):
+            errors.append(f"lon is required for {chart_type} charts")
         return errors
     
     required = get_required_fields(chart_type)
