@@ -431,6 +431,34 @@ def _make_bar(table: Table, config: ChartConfig):
         kwargs["title"] = config["title"]
     if config.get("orientation"):
         kwargs["orientation"] = config["orientation"]
+    # Advanced bar options (Phase 10)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("barmode"):
+        kwargs["barmode"] = config["barmode"]
+    if config.get("text_auto"):
+        kwargs["text_auto"] = config["text_auto"]
+    # Error bars
+    if config.get("error_x"):
+        kwargs["error_x"] = config["error_x"]
+    if config.get("error_x_minus"):
+        kwargs["error_x_minus"] = config["error_x_minus"]
+    if config.get("error_y"):
+        kwargs["error_y"] = config["error_y"]
+    if config.get("error_y_minus"):
+        kwargs["error_y_minus"] = config["error_y_minus"]
+    # Axis configuration (bar only supports log axes, not axis titles)
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    # Rendering
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.bar(table, **kwargs)
 
 
@@ -441,6 +469,29 @@ def _make_area(table: Table, config: ChartConfig):
         kwargs["by"] = config["by"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced area options (Phase 10)
+    if config.get("markers") is not None:
+        kwargs["markers"] = config["markers"]
+    if config.get("line_shape"):
+        kwargs["line_shape"] = config["line_shape"]
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    # Axis configuration
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("xaxis_titles"):
+        kwargs["xaxis_titles"] = config["xaxis_titles"]
+    if config.get("yaxis_titles"):
+        kwargs["yaxis_titles"] = config["yaxis_titles"]
+    # Rendering
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.area(table, **kwargs)
 
 
@@ -449,6 +500,16 @@ def _make_pie(table: Table, config: ChartConfig):
     kwargs = {"names": config["names"], "values": config["values"]}
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced pie options (Phase 10)
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("hole"):
+        kwargs["hole"] = config["hole"]
+    # Rendering
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.pie(table, **kwargs)
 
 
@@ -1119,6 +1180,71 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
     if chart_type == "bar":
         if config.get("orientation") and config["orientation"] != "v":
             params.append(f'orientation="{config["orientation"]}"')
+        # Advanced bar options (Phase 10)
+        if config.get("text"):
+            params.append(f'text="{config["text"]}"')
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        if config.get("opacity") is not None and config["opacity"] != 1.0:
+            params.append(f'opacity={config["opacity"]}')
+        if config.get("barmode") and config["barmode"] != "relative":
+            params.append(f'barmode="{config["barmode"]}"')
+        if config.get("text_auto"):
+            params.append("text_auto=True")
+        # Error bars
+        if config.get("error_x"):
+            params.append(f'error_x="{config["error_x"]}"')
+        if config.get("error_x_minus"):
+            params.append(f'error_x_minus="{config["error_x_minus"]}"')
+        if config.get("error_y"):
+            params.append(f'error_y="{config["error_y"]}"')
+        if config.get("error_y_minus"):
+            params.append(f'error_y_minus="{config["error_y_minus"]}"')
+        # Axis configuration (bar only supports log axes, not axis titles)
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        # Rendering
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Area-specific options (Phase 10)
+    if chart_type == "area":
+        if config.get("markers"):
+            params.append("markers=True")
+        if config.get("line_shape") and config["line_shape"] != "linear":
+            params.append(f'line_shape="{config["line_shape"]}"')
+        if config.get("text"):
+            params.append(f'text="{config["text"]}"')
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        if config.get("opacity") is not None and config["opacity"] != 1.0:
+            params.append(f'opacity={config["opacity"]}')
+        # Axis configuration
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        if config.get("xaxis_titles"):
+            params.append(f'xaxis_titles={_format_value(config["xaxis_titles"])}')
+        if config.get("yaxis_titles"):
+            params.append(f'yaxis_titles={_format_value(config["yaxis_titles"])}')
+        # Rendering
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Pie-specific options (Phase 10)
+    if chart_type == "pie":
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        if config.get("opacity") is not None and config["opacity"] != 1.0:
+            params.append(f'opacity={config["opacity"]}')
+        if config.get("hole") and config["hole"] > 0:
+            params.append(f'hole={config["hole"]}')
+        # Rendering
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
 
     # Histogram-specific options
     if chart_type == "histogram":
@@ -2997,12 +3123,19 @@ def chart_builder_app() -> ui.Element:
     xaxis_title, set_xaxis_title = ui.use_state("")
     yaxis_title, set_yaxis_title = ui.use_state("")
 
-    # Opacity (scatter)
+    # Opacity (scatter, bar, area, pie)
     opacity, set_opacity = ui.use_state(1.0)
 
     # Line-specific advanced options
     line_dash_col, set_line_dash_col = ui.use_state("")
     width_col, set_width_col = ui.use_state("")
+
+    # Bar-specific advanced options (Phase 10)
+    barmode, set_barmode = ui.use_state("relative")
+    text_auto, set_text_auto = ui.use_state(False)
+
+    # Pie-specific advanced options (Phase 10)
+    hole, set_hole = ui.use_state(0.0)
 
     # Rendering options
     render_mode, set_render_mode = ui.use_state("webgl")
@@ -3184,11 +3317,72 @@ def chart_builder_app() -> ui.Element:
             config["template"] = template
     elif chart_type == "bar":
         config["orientation"] = orientation
+        # Advanced bar options (Phase 10)
+        if text_col:
+            config["text"] = text_col
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        if barmode and barmode != "relative":
+            config["barmode"] = barmode
+        if text_auto:
+            config["text_auto"] = text_auto
+        # Error bars
+        if error_x_col:
+            config["error_x"] = error_x_col
+        if error_x_minus_col:
+            config["error_x_minus"] = error_x_minus_col
+        if error_y_col:
+            config["error_y"] = error_y_col
+        if error_y_minus_col:
+            config["error_y_minus"] = error_y_minus_col
+        # Axis configuration (bar only supports log axes, not axis titles)
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        # Rendering
+        if template:
+            config["template"] = template
+    elif chart_type == "area":
+        # Advanced area options (Phase 10)
+        config["markers"] = markers
+        if line_shape:
+            config["line_shape"] = line_shape
+        if text_col:
+            config["text"] = text_col
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        # Axis configuration
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if xaxis_title:
+            config["xaxis_titles"] = xaxis_title
+        if yaxis_title:
+            config["yaxis_titles"] = yaxis_title
+        # Rendering
+        if template:
+            config["template"] = template
     elif chart_type == "pie":
         if names_col:
             config["names"] = names_col
         if values_col:
             config["values"] = values_col
+        # Advanced pie options (Phase 10)
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        if hole > 0.0:
+            config["hole"] = hole
+        # Rendering
+        if template:
+            config["template"] = template
     elif chart_type == "histogram":
         if nbins:
             config["nbins"] = nbins
@@ -4346,38 +4540,44 @@ def chart_builder_app() -> ui.Element:
                 if chart_type == "bar"
                 else None
             ),
-            # Advanced Options (collapsible) - only for scatter and line
+            # Advanced Options (collapsible) - for scatter, line, bar, area, pie
             (
                 ui.disclosure(
                     title="Advanced Options",
                     panel=ui.flex(
-                        # Text and Hover options
-                        ui.flex(
-                            ui.picker(
-                                *[
-                                    ui.item(item["label"], key=item["key"])
-                                    for item in optional_column_items
-                                ],
-                                label="Text Labels",
-                                selected_key=text_col,
-                                on_selection_change=set_text_col,
-                                flex_grow=1,
-                            ),
-                            ui.picker(
-                                *[
-                                    ui.item(item["label"], key=item["key"])
-                                    for item in optional_column_items
-                                ],
-                                label="Hover Name",
-                                selected_key=hover_name_col,
-                                on_selection_change=set_hover_name_col,
-                                flex_grow=1,
-                            ),
-                            direction="row",
-                            gap="size-100",
-                            width="100%",
+                        # Text and Hover options (text for scatter/line/bar/area, hover for all)
+                        (
+                            ui.flex(
+                                (
+                                    ui.picker(
+                                        *[
+                                            ui.item(item["label"], key=item["key"])
+                                            for item in optional_column_items
+                                        ],
+                                        label="Text Labels",
+                                        selected_key=text_col,
+                                        on_selection_change=set_text_col,
+                                        flex_grow=1,
+                                    )
+                                    if chart_type != "pie"
+                                    else None
+                                ),
+                                ui.picker(
+                                    *[
+                                        ui.item(item["label"], key=item["key"])
+                                        for item in optional_column_items
+                                    ],
+                                    label="Hover Name",
+                                    selected_key=hover_name_col,
+                                    on_selection_change=set_hover_name_col,
+                                    flex_grow=1,
+                                ),
+                                direction="row",
+                                gap="size-100",
+                                width="100%",
+                            )
                         ),
-                        # Opacity (scatter only)
+                        # Opacity (scatter, bar, area, pie)
                         (
                             ui.slider(
                                 label="Opacity",
@@ -4388,7 +4588,7 @@ def chart_builder_app() -> ui.Element:
                                 step=0.1,
                                 width="100%",
                             )
-                            if chart_type == "scatter"
+                            if chart_type in ("scatter", "bar", "area", "pie")
                             else None
                         ),
                         # Line-specific: line_dash and width columns
@@ -4419,6 +4619,71 @@ def chart_builder_app() -> ui.Element:
                                 width="100%",
                             )
                             if chart_type == "line"
+                            else None
+                        ),
+                        # Bar-specific: barmode and text_auto
+                        (
+                            ui.flex(
+                                ui.picker(
+                                    ui.item("Relative (stacked)", key="relative"),
+                                    ui.item("Group (side by side)", key="group"),
+                                    ui.item("Overlay", key="overlay"),
+                                    label="Bar Mode",
+                                    selected_key=barmode,
+                                    on_selection_change=set_barmode,
+                                    flex_grow=1,
+                                ),
+                                ui.checkbox(
+                                    "Auto Text Labels",
+                                    is_selected=text_auto,
+                                    on_change=set_text_auto,
+                                ),
+                                direction="row",
+                                gap="size-100",
+                                width="100%",
+                                align_items="end",
+                            )
+                            if chart_type == "bar"
+                            else None
+                        ),
+                        # Area-specific: markers and line_shape
+                        (
+                            ui.flex(
+                                ui.checkbox(
+                                    "Show Markers",
+                                    is_selected=markers,
+                                    on_change=set_markers,
+                                ),
+                                ui.picker(
+                                    *[
+                                        ui.item(ls["label"], key=ls["key"])
+                                        for ls in LINE_SHAPES
+                                    ],
+                                    label="Line Shape",
+                                    selected_key=line_shape,
+                                    on_selection_change=set_line_shape,
+                                    flex_grow=1,
+                                ),
+                                direction="row",
+                                gap="size-100",
+                                width="100%",
+                                align_items="end",
+                            )
+                            if chart_type == "area"
+                            else None
+                        ),
+                        # Pie-specific: hole (for donut chart)
+                        (
+                            ui.slider(
+                                label="Hole Size (Donut Chart)",
+                                value=hole,
+                                on_change=set_hole,
+                                min_value=0.0,
+                                max_value=0.9,
+                                step=0.1,
+                                width="100%",
+                            )
+                            if chart_type == "pie"
                             else None
                         ),
                         # Marginal plots (scatter only)
@@ -4453,127 +4718,160 @@ def chart_builder_app() -> ui.Element:
                             if chart_type == "scatter"
                             else None
                         ),
-                        # Error bars
-                        ui.text(
-                            "Error Bars",
-                            UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"},
+                        # Error bars (scatter, line, bar only)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Error Bars",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        *[
+                                            ui.item(item["label"], key=item["key"])
+                                            for item in optional_column_items
+                                        ],
+                                        label="Error X",
+                                        selected_key=error_x_col,
+                                        on_selection_change=set_error_x_col,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        *[
+                                            ui.item(item["label"], key=item["key"])
+                                            for item in optional_column_items
+                                        ],
+                                        label="Error X-",
+                                        selected_key=error_x_minus_col,
+                                        on_selection_change=set_error_x_minus_col,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        *[
+                                            ui.item(item["label"], key=item["key"])
+                                            for item in optional_column_items
+                                        ],
+                                        label="Error Y",
+                                        selected_key=error_y_col,
+                                        on_selection_change=set_error_y_col,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        *[
+                                            ui.item(item["label"], key=item["key"])
+                                            for item in optional_column_items
+                                        ],
+                                        label="Error Y-",
+                                        selected_key=error_y_minus_col,
+                                        on_selection_change=set_error_y_minus_col,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                direction="column",
+                                gap="size-100",
+                                margin_top="size-100",
+                            )
+                            if chart_type in ("scatter", "line", "bar")
+                            else None
                         ),
-                        ui.flex(
-                            ui.picker(
-                                *[
-                                    ui.item(item["label"], key=item["key"])
-                                    for item in optional_column_items
-                                ],
-                                label="Error X",
-                                selected_key=error_x_col,
-                                on_selection_change=set_error_x_col,
-                                flex_grow=1,
-                            ),
-                            ui.picker(
-                                *[
-                                    ui.item(item["label"], key=item["key"])
-                                    for item in optional_column_items
-                                ],
-                                label="Error X-",
-                                selected_key=error_x_minus_col,
-                                on_selection_change=set_error_x_minus_col,
-                                flex_grow=1,
-                            ),
-                            direction="row",
-                            gap="size-100",
-                            width="100%",
-                        ),
-                        ui.flex(
-                            ui.picker(
-                                *[
-                                    ui.item(item["label"], key=item["key"])
-                                    for item in optional_column_items
-                                ],
-                                label="Error Y",
-                                selected_key=error_y_col,
-                                on_selection_change=set_error_y_col,
-                                flex_grow=1,
-                            ),
-                            ui.picker(
-                                *[
-                                    ui.item(item["label"], key=item["key"])
-                                    for item in optional_column_items
-                                ],
-                                label="Error Y-",
-                                selected_key=error_y_minus_col,
-                                on_selection_change=set_error_y_minus_col,
-                                flex_grow=1,
-                            ),
-                            direction="row",
-                            gap="size-100",
-                            width="100%",
-                        ),
-                        # Axis configuration
-                        ui.text(
-                            "Axis Configuration",
-                            UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"},
-                        ),
-                        ui.flex(
-                            ui.checkbox(
-                                "Log X",
-                                is_selected=log_x,
-                                on_change=set_log_x,
-                            ),
-                            ui.checkbox(
-                                "Log Y",
-                                is_selected=log_y,
-                                on_change=set_log_y,
-                            ),
-                            direction="row",
-                            gap="size-200",
-                        ),
-                        ui.flex(
-                            ui.text_field(
-                                label="X Axis Title",
-                                value=xaxis_title,
-                                on_change=set_xaxis_title,
-                                flex_grow=1,
-                            ),
-                            ui.text_field(
-                                label="Y Axis Title",
-                                value=yaxis_title,
-                                on_change=set_yaxis_title,
-                                flex_grow=1,
-                            ),
-                            direction="row",
-                            gap="size-100",
-                            width="100%",
+                        # Axis configuration (scatter, line, bar, area only)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Axis Configuration",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.flex(
+                                    ui.checkbox(
+                                        "Log X",
+                                        is_selected=log_x,
+                                        on_change=set_log_x,
+                                    ),
+                                    ui.checkbox(
+                                        "Log Y",
+                                        is_selected=log_y,
+                                        on_change=set_log_y,
+                                    ),
+                                    direction="row",
+                                    gap="size-200",
+                                ),
+                                # Axis titles only for scatter, line, area (not bar)
+                                (
+                                    ui.flex(
+                                        ui.text_field(
+                                            label="X Axis Title",
+                                            value=xaxis_title,
+                                            on_change=set_xaxis_title,
+                                            flex_grow=1,
+                                        ),
+                                        ui.text_field(
+                                            label="Y Axis Title",
+                                            value=yaxis_title,
+                                            on_change=set_yaxis_title,
+                                            flex_grow=1,
+                                        ),
+                                        direction="row",
+                                        gap="size-100",
+                                        width="100%",
+                                    )
+                                    if chart_type in ("scatter", "line", "area")
+                                    else None
+                                ),
+                                direction="column",
+                                gap="size-100",
+                                margin_top="size-100",
+                            )
+                            if chart_type in ("scatter", "line", "bar", "area")
+                            else None
                         ),
                         # Rendering options
-                        ui.text(
-                            "Rendering",
-                            UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"},
-                        ),
                         ui.flex(
-                            ui.picker(
-                                ui.item("WebGL (faster)", key="webgl"),
-                                ui.item("SVG (more compatible)", key="svg"),
-                                label="Render Mode",
-                                selected_key=render_mode,
-                                on_selection_change=set_render_mode,
-                                flex_grow=1,
+                            ui.text(
+                                "Rendering",
+                                UNSAFE_style={"fontWeight": "bold"},
                             ),
-                            ui.picker(
-                                ui.item("(Default)", key=""),
-                                ui.item("plotly", key="plotly"),
-                                ui.item("plotly_white", key="plotly_white"),
-                                ui.item("plotly_dark", key="plotly_dark"),
-                                ui.item("ggplot2", key="ggplot2"),
-                                ui.item("seaborn", key="seaborn"),
-                                ui.item("simple_white", key="simple_white"),
-                                label="Template",
-                                selected_key=template,
-                                on_selection_change=set_template,
-                                flex_grow=1,
+                            ui.flex(
+                                # Render mode only for scatter/line
+                                (
+                                    ui.picker(
+                                        ui.item("WebGL (faster)", key="webgl"),
+                                        ui.item("SVG (more compatible)", key="svg"),
+                                        label="Render Mode",
+                                        selected_key=render_mode,
+                                        on_selection_change=set_render_mode,
+                                        flex_grow=1,
+                                    )
+                                    if chart_type in ("scatter", "line")
+                                    else None
+                                ),
+                                ui.picker(
+                                    ui.item("(Default)", key=""),
+                                    ui.item("plotly", key="plotly"),
+                                    ui.item("plotly_white", key="plotly_white"),
+                                    ui.item("plotly_dark", key="plotly_dark"),
+                                    ui.item("ggplot2", key="ggplot2"),
+                                    ui.item("seaborn", key="seaborn"),
+                                    ui.item("simple_white", key="simple_white"),
+                                    label="Template",
+                                    selected_key=template,
+                                    on_selection_change=set_template,
+                                    flex_grow=1,
+                                ),
+                                direction="row",
+                                gap="size-100",
+                                width="100%",
                             ),
-                            direction="row",
+                            direction="column",
                             gap="size-100",
-                            width="100%",
+                            margin_top="size-100",
                         ),
                         direction="column",
                         gap="size-100",
@@ -4583,7 +4881,7 @@ def chart_builder_app() -> ui.Element:
                         not advanced_expanded
                     ),
                 )
-                if chart_type in ("scatter", "line")
+                if chart_type in ("scatter", "line", "bar", "area", "pie")
                 else None
             ),
             # Title
