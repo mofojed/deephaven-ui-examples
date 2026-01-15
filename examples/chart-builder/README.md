@@ -24,7 +24,7 @@ exec(open('/data/examples/chart-builder/app.py').read())
 This creates:
 
 - `chart_builder_demo` - Full chart builder with dataset selector
-- `iris_chart_builder` - For the Iris flower dataset  
+- `iris_chart_builder` - For the Iris flower dataset
 - `stocks_chart_builder` - For the stocks dataset
 
 ## How It Works
@@ -73,15 +73,15 @@ my_chart_builder = chart_builder(my_table)
 
 ## Supported Chart Types
 
-| Category | Types |
-| -------- | ----- |
-| Basic | scatter, line, bar, area, pie |
-| Distribution | histogram, box, violin, strip, density_heatmap |
-| Financial | candlestick, ohlc |
-| Hierarchical | treemap, sunburst, icicle, funnel, funnel_area |
+| Category         | Types                                                                         |
+| ---------------- | ----------------------------------------------------------------------------- |
+| Basic            | scatter, line, bar, area, pie                                                 |
+| Distribution     | histogram, box, violin, strip, density_heatmap                                |
+| Financial        | candlestick, ohlc                                                             |
+| Hierarchical     | treemap, sunburst, icicle, funnel, funnel_area                                |
 | 3D/Polar/Ternary | scatter_3d, line_3d, scatter_polar, line_polar, scatter_ternary, line_ternary |
-| Map/Geo | scatter_geo, line_geo, scatter_map, line_map, density_map |
-| Other | timeline |
+| Map/Geo          | scatter_geo, line_geo, scatter_map, line_map, density_map                     |
+| Other            | timeline                                                                      |
 
 ## Testing
 

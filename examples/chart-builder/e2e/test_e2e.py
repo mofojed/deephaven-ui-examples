@@ -240,3 +240,335 @@ class TestOHLCChartE2E:
         # Verify chart is rendered
         chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
         expect(chart_element.first).to_be_visible(timeout=10000)
+
+
+# =============================================================================
+# Map/Geo Chart Tests
+# =============================================================================
+
+@pytest.fixture
+def flights_widget_page(page: Page) -> Page:
+    """Navigate to the chart_builder_demo widget and select Flights dataset."""
+    url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+    page.goto(url, timeout=30000)
+    # Wait for the chart builder UI to load using exact text match
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=15000)
+    
+    # Select the Flights dataset
+    dataset_picker = page.locator("button:has-text('Iris')")
+    dataset_picker.click()
+    # Use the popover menu item specifically
+    page.get_by_test_id("popover").get_by_text("Flights").click()
+    page.wait_for_timeout(1000)  # Wait for dataset to load
+    
+    return page
+
+
+@pytest.fixture
+def outages_widget_page(page: Page) -> Page:
+    """Navigate to the chart_builder_demo widget and select Outages dataset."""
+    url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+    page.goto(url, timeout=30000)
+    # Wait for the chart builder UI to load using exact text match
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=15000)
+    
+    # Select the Outages dataset
+    dataset_picker = page.locator("button:has-text('Iris')")
+    dataset_picker.click()
+    # Use the popover menu item specifically
+    page.get_by_test_id("popover").get_by_text("Outages").click()
+    page.wait_for_timeout(1000)  # Wait for dataset to load
+    
+    return page
+
+
+def select_chart_type(page: Page, chart_type_name: str):
+    """Helper to select a chart type from the dropdown, scrolling if needed.
+    
+    The chart type dropdown uses virtual scrolling, so items at the bottom
+    of the list aren't rendered until we scroll to them.
+    """
+    # The Chart Type picker button displays the current selection (default is "Scatter")
+    # Look for a button with "Scatter" text (the default selected chart type)
+    chart_type_button = page.locator("button:has-text('Scatter')")
+    chart_type_button.click()
+    page.wait_for_timeout(500)
+    
+    # Get the popover listbox
+    popover = page.get_by_test_id("popover")
+    popover.wait_for(state="visible", timeout=5000)
+    
+    # The listbox uses virtual scrolling - we need to scroll to make items visible
+    listbox = popover.locator('[role="listbox"]')
+    
+    # Scroll the listbox to the bottom to trigger rendering of all items
+    # Map chart types are near the bottom of the list
+    listbox.evaluate("el => el.scrollTop = el.scrollHeight")
+    page.wait_for_timeout(300)
+    
+    # Now find and click the chart type item
+    chart_type_item = popover.get_by_text(chart_type_name, exact=True)
+    chart_type_item.click()
+    page.wait_for_timeout(500)
+
+
+@pytest.mark.e2e
+class TestMapChartE2E:
+    """End-to-end tests for Map/Geo charts."""
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_map_chart_renders(self, flights_widget_page: Page):
+        """Test that scatter_map chart renders with flights data."""
+        page = flights_widget_page
+        
+        # Select Scatter Map chart type
+        select_chart_type(page, "Scatter Map")
+        
+        # Select Lat column
+        lat_picker = page.get_by_role("button", name="Lat")
+        lat_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lat", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Lon column
+        lon_picker = page.get_by_role("button", name="Lon")
+        lon_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lon", exact=True).first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered (check for plotly chart element)
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_map_with_size_color(self, flights_widget_page: Page):
+        """Test scatter_map chart with size and color options."""
+        page = flights_widget_page
+        
+        # Select Scatter Map chart type
+        select_chart_type(page, "Scatter Map")
+        
+        # Select Lat column
+        lat_picker = page.get_by_role("button", name="Lat")
+        lat_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lat", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Lon column
+        lon_picker = page.get_by_role("button", name="Lon")
+        lon_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lon", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Size column (Speed)
+        size_picker = page.get_by_role("button", name="Size")
+        size_picker.click()
+        page.get_by_test_id("popover").get_by_text("Speed").first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Color column (Speed)
+        color_picker = page.get_by_role("button", name="Color")
+        color_picker.click()
+        page.get_by_test_id("popover").get_by_text("Speed").first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_map_chart_renders(self, flights_widget_page: Page):
+        """Test that line_map chart renders with flights data."""
+        page = flights_widget_page
+        
+        # Select Line Map chart type
+        select_chart_type(page, "Line Map")
+        
+        # Select Lat column
+        lat_picker = page.get_by_role("button", name="Lat")
+        lat_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lat", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Lon column
+        lon_picker = page.get_by_role("button", name="Lon")
+        lon_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lon", exact=True).first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_density_map_chart_renders(self, outages_widget_page: Page):
+        """Test that density_map chart renders with outages data."""
+        page = outages_widget_page
+        
+        # Select Density Map chart type
+        select_chart_type(page, "Density Map")
+        
+        # Select Lat column
+        lat_picker = page.get_by_role("button", name="Lat")
+        lat_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lat", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Lon column
+        lon_picker = page.get_by_role("button", name="Lon")
+        lon_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lon", exact=True).first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_density_map_with_z_radius(self, outages_widget_page: Page):
+        """Test density_map chart with Z (intensity) and radius options."""
+        page = outages_widget_page
+        
+        # Select Density Map chart type
+        select_chart_type(page, "Density Map")
+        
+        # Select Lat column
+        lat_picker = page.get_by_role("button", name="Lat")
+        lat_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lat", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Lon column
+        lon_picker = page.get_by_role("button", name="Lon")
+        lon_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lon", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Z (Intensity) column (Severity)
+        z_picker = page.get_by_role("button", name="Z (Intensity)")
+        z_picker.click()
+        page.get_by_test_id("popover").get_by_text("Severity").first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_geo_chart_renders(self, flights_widget_page: Page):
+        """Test that scatter_geo chart renders with flights data."""
+        page = flights_widget_page
+        
+        # Select Scatter Geo chart type
+        select_chart_type(page, "Scatter Geo")
+        
+        # Select Lat column
+        lat_picker = page.get_by_role("button", name="Lat")
+        lat_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lat", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Lon column
+        lon_picker = page.get_by_role("button", name="Lon")
+        lon_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lon", exact=True).first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_geo_chart_renders(self, flights_widget_page: Page):
+        """Test that line_geo chart renders with flights data."""
+        page = flights_widget_page
+        
+        # Select Line Geo chart type
+        select_chart_type(page, "Line Geo")
+        
+        # Select Lat column
+        lat_picker = page.get_by_role("button", name="Lat")
+        lat_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lat", exact=True).first.click()
+        page.wait_for_timeout(300)
+        
+        # Select Lon column
+        lon_picker = page.get_by_role("button", name="Lon")
+        lon_picker.click()
+        page.get_by_test_id("popover").get_by_text("Lon", exact=True).first.click()
+        page.wait_for_timeout(1000)
+        
+        # Verify no error message is displayed
+        error_text = page.locator('text=/Invalid configuration|Error/')
+        expect(error_text).not_to_be_visible()
+        
+        # Verify chart is rendered
+        chart_element = page.locator(".plotly, .js-plotly-plot, [class*='chart'], svg")
+        expect(chart_element.first).to_be_visible(timeout=10000)
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_map_controls_visible_for_scatter_map(self, flights_widget_page: Page):
+        """Test that map-specific controls (Lat, Lon, Zoom) are visible for scatter_map."""
+        page = flights_widget_page
+        
+        # Select Scatter Map chart type
+        select_chart_type(page, "Scatter Map")
+        
+        # Verify map-specific controls are visible
+        # Use locator with text match for the label, then find the associated button
+        lat_control = page.get_by_label("Lat").locator("visible=true").first
+        expect(lat_control).to_be_visible()
+        
+        lon_control = page.get_by_label("Lon").locator("visible=true").first
+        expect(lon_control).to_be_visible()
+        
+        # Verify Zoom control is visible
+        zoom_control = page.get_by_label("Zoom").locator("visible=true").first
+        expect(zoom_control).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_geo_controls_visible_for_scatter_geo(self, flights_widget_page: Page):
+        """Test that geo-specific controls (Lat, Lon, Locations, Location Mode) are visible."""
+        page = flights_widget_page
+        
+        # Select Scatter Geo chart type
+        select_chart_type(page, "Scatter Geo")
+        
+        # Verify geo-specific controls are visible
+        lat_control = page.get_by_label("Lat").locator("visible=true").first
+        expect(lat_control).to_be_visible()
+        
+        lon_control = page.get_by_label("Lon").locator("visible=true").first
+        expect(lon_control).to_be_visible()
+        
+        # Verify Locations picker is visible
+        locations_control = page.get_by_label("Locations").locator("visible=true").first
+        expect(locations_control).to_be_visible()
+        
+        # Verify Location Mode picker is visible
+        location_mode_control = page.get_by_label("Location Mode").locator("visible=true").first
+        expect(location_mode_control).to_be_visible()
