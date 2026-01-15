@@ -21,8 +21,9 @@ if TYPE_CHECKING:
 # Type Definitions
 # =============================================================================
 
-ChartType = Literal["scatter", "line"]
+ChartType = Literal["scatter", "line", "bar", "area", "pie"]
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
+Orientation = Literal["v", "h"]
 
 
 class ChartConfig(TypedDict):
@@ -39,6 +40,11 @@ class ChartConfig(TypedDict):
     # Line options
     markers: NotRequired[bool]
     line_shape: NotRequired[LineShape]
+    # Bar options
+    orientation: NotRequired[Orientation]
+    # Pie options
+    names: NotRequired[str]
+    values: NotRequired[str]
 
 
 # =============================================================================
@@ -52,11 +58,16 @@ def _validate_config(config: ChartConfig) -> list[str]:
     if not chart_type:
         errors.append("chart_type is required")
         return errors
-    if chart_type in ("scatter", "line"):
+    if chart_type in ("scatter", "line", "bar", "area"):
         if not config.get("x"):
             errors.append(f"x is required for {chart_type} charts")
         if not config.get("y"):
             errors.append(f"y is required for {chart_type} charts")
+    elif chart_type == "pie":
+        if not config.get("names"):
+            errors.append("names is required for pie charts")
+        if not config.get("values"):
+            errors.append("values is required for pie charts")
     return errors
 
 
@@ -90,6 +101,36 @@ def _make_line(table: Table, config: ChartConfig):
     return dx.line(table, **kwargs)
 
 
+def _make_bar(table: Table, config: ChartConfig):
+    """Create a bar chart."""
+    kwargs = {"x": config["x"], "y": config["y"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    if config.get("orientation"):
+        kwargs["orientation"] = config["orientation"]
+    return dx.bar(table, **kwargs)
+
+
+def _make_area(table: Table, config: ChartConfig):
+    """Create an area chart."""
+    kwargs = {"x": config["x"], "y": config["y"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.area(table, **kwargs)
+
+
+def _make_pie(table: Table, config: ChartConfig):
+    """Create a pie chart."""
+    kwargs = {"names": config["names"], "values": config["values"]}
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.pie(table, **kwargs)
+
+
 def make_chart(table: Table, config: ChartConfig):
     """Create a chart from the given table and configuration."""
     errors = _validate_config(config)
@@ -101,6 +142,12 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_scatter(table, config)
     elif chart_type == "line":
         return _make_line(table, config)
+    elif chart_type == "bar":
+        return _make_bar(table, config)
+    elif chart_type == "area":
+        return _make_area(table, config)
+    elif chart_type == "pie":
+        return _make_pie(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -112,6 +159,14 @@ def make_chart(table: Table, config: ChartConfig):
 CHART_TYPES = [
     {"key": "scatter", "label": "Scatter", "icon": "vsCircleFilled"},
     {"key": "line", "label": "Line", "icon": "vsGraphLine"},
+    {"key": "bar", "label": "Bar", "icon": "vsGraphLeft"},
+    {"key": "area", "label": "Area", "icon": "vsGraph"},
+    {"key": "pie", "label": "Pie", "icon": "vsPieChart"},
+]
+
+ORIENTATIONS = [
+    {"key": "v", "label": "Vertical"},
+    {"key": "h", "label": "Horizontal"},
 ]
 
 LINE_SHAPES = [
@@ -192,6 +247,13 @@ def chart_builder(table: Table) -> ui.Element:
     markers, set_markers = ui.use_state(False)
     line_shape, set_line_shape = ui.use_state("linear")
     
+    # Bar-specific state
+    orientation, set_orientation = ui.use_state("v")
+    
+    # Pie-specific state
+    names_col, set_names_col = ui.use_state("")
+    values_col, set_values_col = ui.use_state("")
+    
     # Get column names from table
     columns = _get_column_names(table)
     column_items = _column_picker_items(columns, include_none=False)
@@ -200,12 +262,22 @@ def chart_builder(table: Table) -> ui.Element:
     # Build configuration from state
     config: ChartConfig = {"chart_type": chart_type}
     
-    if x_col:
-        config["x"] = x_col
-    if y_col:
-        config["y"] = y_col
-    if by_col:
-        config["by"] = by_col
+    # X/Y charts (scatter, line, bar, area)
+    if chart_type in ("scatter", "line", "bar", "area"):
+        if x_col:
+            config["x"] = x_col
+        if y_col:
+            config["y"] = y_col
+        if by_col:
+            config["by"] = by_col
+    
+    # Pie chart uses names/values
+    if chart_type == "pie":
+        if names_col:
+            config["names"] = names_col
+        if values_col:
+            config["values"] = values_col
+    
     if title:
         config["title"] = title
     
@@ -221,12 +293,22 @@ def chart_builder(table: Table) -> ui.Element:
         config["markers"] = markers
         if line_shape:
             config["line_shape"] = line_shape
+    elif chart_type == "bar":
+        if orientation:
+            config["orientation"] = orientation
     
-    # Create chart if we have valid x and y
+    # Determine if chart can be created
+    can_create_chart = False
+    if chart_type in ("scatter", "line", "bar", "area"):
+        can_create_chart = bool(x_col and y_col)
+    elif chart_type == "pie":
+        can_create_chart = bool(names_col and values_col)
+    
+    # Create chart if we have valid configuration
     chart = None
     error_message = None
     
-    if x_col and y_col:
+    if can_create_chart:
         try:
             chart = make_chart(table, config)
         except Exception as e:
@@ -249,7 +331,7 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ),
             
-            # X and Y columns side by side
+            # X and Y columns side by side (for scatter, line, bar, area)
             ui.flex(
                 ui.picker(
                     *[ui.item(item["label"], key=item["key"]) for item in column_items],
@@ -268,16 +350,37 @@ def chart_builder(table: Table) -> ui.Element:
                 direction="row",
                 gap="size-100",
                 width="100%",
-            ),
+            ) if chart_type in ("scatter", "line", "bar", "area") else None,
             
-            # Group by
+            # Names and Values columns (for pie)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Names",
+                    selected_key=names_col,
+                    on_selection_change=set_names_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Values",
+                    selected_key=values_col,
+                    on_selection_change=set_values_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "pie" else None,
+            
+            # Group by (not for pie)
             ui.picker(
                 *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
                 label="Group By",
                 selected_key=by_col,
                 on_selection_change=set_by_col,
                 width="100%",
-            ),
+            ) if chart_type != "pie" else None,
             
             # Scatter-specific options
             ui.flex(
@@ -320,6 +423,15 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ) if chart_type == "line" else None,
             
+            # Bar-specific options
+            ui.picker(
+                *[ui.item(o["label"], key=o["key"]) for o in ORIENTATIONS],
+                label="Orientation",
+                selected_key=orientation,
+                on_selection_change=set_orientation,
+                width="100%",
+            ) if chart_type == "bar" else None,
+            
             # Title
             ui.text_field(
                 label="Title",
@@ -337,12 +449,14 @@ def chart_builder(table: Table) -> ui.Element:
         min_width="size-3000",
     )
     
-    # Chart area
+    # Chart area - update placeholder message based on chart type
+    placeholder_msg = "Select Names and Values columns to preview chart" if chart_type == "pie" else "Select X and Y columns to preview chart"
+    
     chart_area = ui.view(
         ui.text(error_message, UNSAFE_style={"color": "var(--spectrum-negative-color-900)"}) if error_message 
         else chart if chart 
         else ui.flex(
-            ui.text("Select X and Y columns to preview chart", UNSAFE_style={"color": "var(--spectrum-gray-600)"}),
+            ui.text(placeholder_msg, UNSAFE_style={"color": "var(--spectrum-gray-600)"}),
             align_items="center",
             justify_content="center",
             height="100%",
@@ -389,6 +503,13 @@ def chart_builder_app() -> ui.Element:
     markers, set_markers = ui.use_state(False)
     line_shape, set_line_shape = ui.use_state("linear")
     
+    # Bar-specific state
+    orientation, set_orientation = ui.use_state("v")
+    
+    # Pie-specific state
+    names_col, set_names_col = ui.use_state("")
+    values_col, set_values_col = ui.use_state("")
+    
     # Handler to change dataset and reset column selections
     def handle_dataset_change(new_dataset: str):
         set_dataset_name(new_dataset)
@@ -399,6 +520,8 @@ def chart_builder_app() -> ui.Element:
         set_size_col("")
         set_symbol_col("")
         set_color_col("")
+        set_names_col("")
+        set_values_col("")
     
     # Get column names from table
     columns = _get_column_names(table)
@@ -429,12 +552,24 @@ def chart_builder_app() -> ui.Element:
         config["markers"] = markers
         if line_shape:
             config["line_shape"] = line_shape
+    elif chart_type == "bar":
+        config["orientation"] = orientation
+    elif chart_type == "pie":
+        if names_col:
+            config["names"] = names_col
+        if values_col:
+            config["values"] = values_col
     
-    # Create chart if we have valid x and y
+    # Create chart based on chart type requirements
+    # Pie needs names and values, others need x and y
+    can_create_chart = (
+        (chart_type == "pie" and names_col and values_col) or
+        (chart_type != "pie" and x_col and y_col)
+    )
     chart = None
     error_message = None
     
-    if x_col and y_col:
+    if can_create_chart:
         try:
             chart = make_chart(table, config)
         except Exception as e:
@@ -469,7 +604,7 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ),
             
-            # X and Y columns side by side
+            # X and Y columns side by side (for non-pie charts)
             ui.flex(
                 ui.picker(
                     *[ui.item(item["label"], key=item["key"]) for item in column_items],
@@ -488,16 +623,37 @@ def chart_builder_app() -> ui.Element:
                 direction="row",
                 gap="size-100",
                 width="100%",
-            ),
+            ) if chart_type != "pie" else None,
             
-            # Group by
+            # Names and Values columns (for pie charts)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Names",
+                    selected_key=names_col,
+                    on_selection_change=set_names_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Values",
+                    selected_key=values_col,
+                    on_selection_change=set_values_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "pie" else None,
+            
+            # Group by (not for pie charts)
             ui.picker(
                 *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
                 label="Group By",
                 selected_key=by_col,
                 on_selection_change=set_by_col,
                 width="100%",
-            ),
+            ) if chart_type != "pie" else None,
             
             # Scatter-specific options
             ui.flex(
@@ -540,6 +696,15 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ) if chart_type == "line" else None,
             
+            # Bar-specific options
+            ui.picker(
+                *[ui.item(o["label"], key=o["key"]) for o in ORIENTATIONS],
+                label="Orientation",
+                selected_key=orientation,
+                on_selection_change=set_orientation,
+                width="100%",
+            ) if chart_type == "bar" else None,
+            
             # Title
             ui.text_field(
                 label="Title",
@@ -557,12 +722,14 @@ def chart_builder_app() -> ui.Element:
         min_width="size-3000",
     )
     
-    # Chart area
+    # Chart area - update placeholder message based on chart type
+    placeholder_msg = "Select Names and Values columns to preview chart" if chart_type == "pie" else "Select X and Y columns to preview chart"
+    
     chart_area = ui.view(
         ui.text(error_message, UNSAFE_style={"color": "var(--spectrum-negative-color-900)"}) if error_message 
         else chart if chart 
         else ui.flex(
-            ui.text("Select X and Y columns to preview chart", UNSAFE_style={"color": "var(--spectrum-gray-600)"}),
+            ui.text(placeholder_msg, UNSAFE_style={"color": "var(--spectrum-gray-600)"}),
             align_items="center",
             justify_content="center",
             height="100%",

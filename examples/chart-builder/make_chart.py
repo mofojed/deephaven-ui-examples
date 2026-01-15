@@ -38,6 +38,12 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_scatter(table, config)
     elif chart_type == "line":
         return _make_line(table, config)
+    elif chart_type == "bar":
+        return _make_bar(table, config)
+    elif chart_type == "area":
+        return _make_area(table, config)
+    elif chart_type == "pie":
+        return _make_pie(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -108,3 +114,75 @@ def _make_line(table: Table, config: ChartConfig):
         kwargs["log_y"] = config["log_y"]
     
     return dx.line(table, **kwargs)
+
+
+def _make_bar(table: Table, config: ChartConfig):
+    """Create a bar chart.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the bar chart.
+    """
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+    }
+    
+    # Optional parameters
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    if config.get("orientation"):
+        kwargs["orientation"] = config["orientation"]
+    
+    return dx.bar(table, **kwargs)
+
+
+def _make_area(table: Table, config: ChartConfig):
+    """Create an area chart.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the area chart.
+    """
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+    }
+    
+    # Optional parameters
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.area(table, **kwargs)
+
+
+def _make_pie(table: Table, config: ChartConfig):
+    """Create a pie chart.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the pie chart.
+    """
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+    }
+    
+    # Optional parameters
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.pie(table, **kwargs)

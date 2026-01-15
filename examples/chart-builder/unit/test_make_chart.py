@@ -156,3 +156,105 @@ class TestMakeChartCreation:
         
         chart = make_chart(table, config)
         assert chart is not None
+
+    def test_make_bar_chart(self):
+        """Test creating a basic bar chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.tips()
+        config: ChartConfig = {
+            "chart_type": "bar",
+            "x": "Day",
+            "y": "TotalBill",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_bar_chart_horizontal(self):
+        """Test creating a horizontal bar chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.tips()
+        config: ChartConfig = {
+            "chart_type": "bar",
+            "x": "Day",
+            "y": "TotalBill",
+            "orientation": "h",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_bar_chart_with_by(self):
+        """Test creating a bar chart with grouping."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.tips()
+        config: ChartConfig = {
+            "chart_type": "bar",
+            "x": "Day",
+            "y": "TotalBill",
+            "by": "Smoker",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_area_chart(self):
+        """Test creating a basic area chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.stocks()
+        config: ChartConfig = {
+            "chart_type": "area",
+            "x": "Timestamp",
+            "y": "Price",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_area_chart_with_by(self):
+        """Test creating an area chart with grouping."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.stocks()
+        config: ChartConfig = {
+            "chart_type": "area",
+            "x": "Timestamp",
+            "y": "Price",
+            "by": "Sym",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_pie_chart(self):
+        """Test creating a basic pie chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.tips()
+        config: ChartConfig = {
+            "chart_type": "pie",
+            "names": "Day",
+            "values": "TotalBill",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_pie_chart_with_title(self):
+        """Test creating a pie chart with title."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.tips()
+        config: ChartConfig = {
+            "chart_type": "pie",
+            "names": "Day",
+            "values": "TotalBill",
+            "title": "Tips by Day",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None

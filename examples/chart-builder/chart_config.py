@@ -3,11 +3,14 @@
 from typing import Literal, TypedDict, NotRequired
 
 
-# Chart types supported in Phase 1
-ChartType = Literal["scatter", "line"]
+# Chart types supported
+ChartType = Literal["scatter", "line", "bar", "area", "pie"]
 
 # Line shape options (spline is NOT supported by dx.line)
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
+
+# Bar chart orientation
+Orientation = Literal["v", "h"]
 
 
 class ChartConfig(TypedDict):
@@ -40,6 +43,13 @@ class ChartConfig(TypedDict):
     markers: NotRequired[bool]
     line_shape: NotRequired[LineShape]
     
+    # Bar-specific options
+    orientation: NotRequired[Orientation]
+    
+    # Pie-specific options
+    names: NotRequired[str]
+    values: NotRequired[str]
+    
     # Axis options
     log_x: NotRequired[bool]
     log_y: NotRequired[bool]
@@ -54,8 +64,10 @@ def get_required_fields(chart_type: ChartType) -> list[str]:
     Returns:
         List of required field names.
     """
-    if chart_type in ("scatter", "line"):
+    if chart_type in ("scatter", "line", "bar", "area"):
         return ["x", "y"]
+    elif chart_type == "pie":
+        return ["names", "values"]
     return []
 
 

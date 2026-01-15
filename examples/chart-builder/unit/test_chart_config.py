@@ -90,3 +90,66 @@ class TestChartConfig:
         }
         errors = validate_config(config)
         assert len(errors) == 0
+
+    def test_get_required_fields_bar(self):
+        """Test required fields for bar chart."""
+        required = get_required_fields("bar")
+        assert "x" in required
+        assert "y" in required
+
+    def test_get_required_fields_area(self):
+        """Test required fields for area chart."""
+        required = get_required_fields("area")
+        assert "x" in required
+        assert "y" in required
+
+    def test_get_required_fields_pie(self):
+        """Test required fields for pie chart."""
+        required = get_required_fields("pie")
+        assert "names" in required
+        assert "values" in required
+        assert "x" not in required
+        assert "y" not in required
+
+    def test_validate_config_valid_bar(self):
+        """Test validation passes for valid bar config."""
+        config: ChartConfig = {"chart_type": "bar", "x": "col1", "y": "col2"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_bar_with_orientation(self):
+        """Test validation passes for bar with orientation."""
+        config: ChartConfig = {
+            "chart_type": "bar",
+            "x": "col1",
+            "y": "col2",
+            "orientation": "h",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_valid_area(self):
+        """Test validation passes for valid area config."""
+        config: ChartConfig = {"chart_type": "area", "x": "col1", "y": "col2"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_valid_pie(self):
+        """Test validation passes for valid pie config."""
+        config: ChartConfig = {"chart_type": "pie", "names": "col1", "values": "col2"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_pie_missing_names(self):
+        """Test validation fails for pie without names."""
+        config: ChartConfig = {"chart_type": "pie", "values": "col1"}
+        errors = validate_config(config)
+        assert len(errors) == 1
+        assert "names is required" in errors[0]
+
+    def test_validate_config_pie_missing_values(self):
+        """Test validation fails for pie without values."""
+        config: ChartConfig = {"chart_type": "pie", "names": "col1"}
+        errors = validate_config(config)
+        assert len(errors) == 1
+        assert "values is required" in errors[0]
