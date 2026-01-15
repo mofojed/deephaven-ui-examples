@@ -742,7 +742,118 @@ class TestAdvancedOptionsE2E:
         # Advanced Options should be visible for line charts
         advanced_options = page.get_by_role("button", name="Advanced Options")
         expect(advanced_options).to_be_visible()
-        expect(advanced_options).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_specific_options_visible(self, advanced_options_page: Page):
+        """Test that line-specific options (Line Dash, Line Width) are visible for line charts."""
+        page = advanced_options_page
+
+        # Switch to line chart
+        chart_type_button = page.get_by_role("button", name="Scatter Chart Type")
+        chart_type_button.click()
+        page.get_by_test_id("popover").get_by_text("Line", exact=True).click()
+        page.wait_for_timeout(500)
+
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Line-specific options should be visible
+        line_dash = page.get_by_label("Line Dash")
+        expect(line_dash.first).to_be_visible()
+
+        line_width = page.get_by_label("Line Width")
+        expect(line_width.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_only_options_hidden_for_line(self, advanced_options_page: Page):
+        """Test that scatter-only options (Opacity, Marginal X/Y) are NOT visible for line charts."""
+        page = advanced_options_page
+
+        # Switch to line chart
+        chart_type_button = page.get_by_role("button", name="Scatter Chart Type")
+        chart_type_button.click()
+        page.get_by_test_id("popover").get_by_text("Line", exact=True).click()
+        page.wait_for_timeout(500)
+
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Scatter-only options should NOT be visible
+        opacity_slider = page.get_by_label("Opacity")
+        expect(opacity_slider).not_to_be_visible()
+
+        marginal_x = page.get_by_label("Marginal X")
+        expect(marginal_x).not_to_be_visible()
+
+        marginal_y = page.get_by_label("Marginal Y")
+        expect(marginal_y).not_to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_dash_updates_generated_code(self, advanced_options_page: Page):
+        """Test that selecting Line Dash column updates the generated code."""
+        page = advanced_options_page
+
+        # Switch to line chart
+        chart_type_button = page.get_by_role("button", name="Scatter Chart Type")
+        chart_type_button.click()
+        page.get_by_test_id("popover").get_by_text("Line", exact=True).click()
+        page.wait_for_timeout(500)
+
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Select a column for Line Dash (Species is available in Iris dataset)
+        line_dash_picker = page.get_by_role("button", name="Line Dash")
+        line_dash_picker.click()
+        page.wait_for_timeout(300)
+        # Use exact=True to avoid matching "SpeciesID"
+        page.get_by_test_id("popover").get_by_text("Species", exact=True).click()
+        page.wait_for_timeout(500)
+
+        # Check that line_dash appears in the generated code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text('line_dash="Species"')
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_common_advanced_options_work(self, advanced_options_page: Page):
+        """Test that common advanced options (error bars, axis config, rendering) work for line charts."""
+        page = advanced_options_page
+
+        # Switch to line chart
+        chart_type_button = page.get_by_role("button", name="Scatter Chart Type")
+        chart_type_button.click()
+        page.get_by_test_id("popover").get_by_text("Line", exact=True).click()
+        page.wait_for_timeout(500)
+
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Common advanced options should be visible
+        text_labels = page.get_by_label("Text Labels")
+        expect(text_labels.first).to_be_visible()
+
+        error_x = page.get_by_label("Error X")
+        expect(error_x.first).to_be_visible()
+
+        log_x = page.get_by_label("Log X")
+        expect(log_x.first).to_be_visible()
+
+        xaxis_title = page.get_by_label("X Axis Title")
+        expect(xaxis_title.first).to_be_visible()
+
+        render_mode = page.get_by_label("Render Mode")
+        expect(render_mode.first).to_be_visible()
+
+        template = page.get_by_label("Template")
+        expect(template.first).to_be_visible()
 
 
 @pytest.fixture
