@@ -13,8 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 
-from chart_config import ChartConfig
-from make_chart import make_chart
+from app import ChartConfig, make_chart
 
 
 class TestMakeChartValidation:

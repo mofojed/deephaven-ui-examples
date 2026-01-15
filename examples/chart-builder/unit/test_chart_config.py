@@ -1,4 +1,4 @@
-"""Unit tests for chart_config module."""
+"""Unit tests for chart configuration validation."""
 
 import sys
 from pathlib import Path
@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 
-from chart_config import (
+from app import (
     ChartConfig,
     get_required_fields,
     validate_config,

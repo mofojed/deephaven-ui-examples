@@ -122,11 +122,60 @@ class ChartConfig(TypedDict):
 
 
 # =============================================================================
+# Chart Configuration Validation
+# =============================================================================
+
+def get_required_fields(chart_type: ChartType) -> list[str]:
+    """Get the required fields for a given chart type.
+    
+    Args:
+        chart_type: The type of chart.
+        
+    Returns:
+        List of required field names.
+    """
+    if chart_type in ("scatter", "line", "bar", "area"):
+        return ["x", "y"]
+    elif chart_type == "pie":
+        return ["names", "values"]
+    elif chart_type == "histogram":
+        return []  # x OR y, validated separately
+    elif chart_type in ("box", "violin", "strip", "density_heatmap"):
+        return ["x", "y"]
+    elif chart_type in ("candlestick", "ohlc"):
+        return ["x", "open", "high", "low", "close"]
+    elif chart_type in ("treemap", "sunburst", "icicle"):
+        return ["names", "values", "parents"]
+    elif chart_type in ("funnel", "funnel_area"):
+        return ["x", "y"]
+    elif chart_type in ("scatter_3d", "line_3d"):
+        return ["x", "y", "z"]
+    elif chart_type in ("scatter_polar", "line_polar"):
+        return ["r", "theta"]
+    elif chart_type in ("scatter_ternary", "line_ternary"):
+        return ["a", "b", "c"]
+    elif chart_type == "timeline":
+        return ["x_start", "x_end", "y"]
+    elif chart_type in ("scatter_geo", "line_geo"):
+        return []  # lat+lon OR locations, validated separately
+    elif chart_type in ("scatter_map", "line_map", "density_map"):
+        return ["lat", "lon"]
+    return []
+
+
+# =============================================================================
 # Chart Creation Functions
 # =============================================================================
 
-def _validate_config(config: ChartConfig) -> list[str]:
-    """Validate a chart configuration."""
+def validate_config(config: ChartConfig) -> list[str]:
+    """Validate a chart configuration.
+    
+    Args:
+        config: The configuration to validate.
+        
+    Returns:
+        List of validation error messages. Empty if valid.
+    """
     errors = []
     chart_type = config.get("chart_type")
     if not chart_type:
@@ -699,7 +748,7 @@ def _make_density_map(table: Table, config: ChartConfig):
 
 def make_chart(table: Table, config: ChartConfig):
     """Create a chart from the given table and configuration."""
-    errors = _validate_config(config)
+    errors = validate_config(config)
     if errors:
         raise ValueError(f"Invalid configuration: {'; '.join(errors)}")
     
