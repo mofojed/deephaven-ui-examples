@@ -156,6 +156,80 @@ center: NotRequired[dict]      # Map center {"lat": float, "lon": float}
 - Zoom level control (tile-based maps)
 - Optional center lat/lon inputs
 
+### Phase 8: Code Generation
+
+Display a copyable Python code block below the chart that shows the exact code needed to recreate the current chart configuration.
+
+#### Features
+
+- Generate `deephaven.plot.express` code based on current selections
+- Display code in a `ui.markdown` component with syntax highlighting
+- Include a copy button for easy copying to clipboard
+- Update in real-time as user changes options
+- Handle all chart types and their specific options
+
+#### Implementation Details
+
+1. **Code Generation Function**
+
+   - Create `_generate_chart_code(config: ChartConfig, dataset_name: str) -> str`
+   - Build the appropriate `dx.<chart_type>()` call with all set parameters
+   - Include dataset loading code (e.g., `table = dx.data.iris()`)
+   - Format code nicely with proper indentation for readability
+   - Omit parameters that are empty/default values
+
+2. **UI Component**
+
+   - Add a section below the chart for generated code
+   - Use `ui.markdown` with fenced code block for syntax highlighting
+   - Add a "Copy" action button using `ui.action_button`
+   - Consider making the section collapsible to save space
+
+3. **Code Format Example**
+
+   ```python
+   from deephaven.plot import express as dx
+
+   # Load dataset
+   table = dx.data.iris()
+
+   # Create chart
+   chart = dx.scatter(
+       table,
+       x="SepalLength",
+       y="SepalWidth",
+       color="Species",
+       title="Iris Scatter Plot",
+   )
+   ```
+
+4. **Edge Cases to Handle**
+   - Custom datasets (ohlc_sample, hierarchy_sample, etc.) need their creation code or a comment placeholder
+   - List values (like `by` with multiple columns) need proper formatting
+   - Map center dict needs proper formatting `{"lat": 44.97, "lon": -93.17}`
+   - Show code even when configuration is incomplete (helps user understand what's needed)
+
+#### UI Layout Update
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Dataset ▼]  [Chart Type ▼]  [X Column ▼]  [Y Column ▼]    │
+│  ... other options ...                                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│                    [CHART VISUALIZATION]                     │
+│                                                              │
+├─────────────────────────────────────────────────────────────┤
+│  📋 Generated Code                              [Copy]       │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ from deephaven.plot import express as dx                ││
+│  │                                                         ││
+│  │ table = dx.data.iris()                                  ││
+│  │ chart = dx.scatter(table, x="SepalLength", ...)         ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## Configuration Data Structure
 
 ```python
