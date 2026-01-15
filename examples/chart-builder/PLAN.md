@@ -222,6 +222,7 @@ Expose ALL available parameters for scatter and line chart types with commonly-u
 #### Scatter Chart Parameters (dx.scatter)
 
 **Currently Implemented (Basic)**:
+
 - `x`, `y` - Axis columns
 - `by` - Grouping column
 - `size` - Size column
@@ -232,10 +233,12 @@ Expose ALL available parameters for scatter and line chart types with commonly-u
 - `log_x`, `log_y` - Log scale axes
 
 **New Basic Parameters**:
+
 - `text` - Text labels column
 - `hover_name` - Hover tooltip name column
 
 **New Advanced Parameters** (in collapsible section):
+
 - Error bars:
   - `error_x` - X error bar column
   - `error_x_minus` - X error bar minus column
@@ -272,6 +275,7 @@ Expose ALL available parameters for scatter and line chart types with commonly-u
 #### Line Chart Parameters (dx.line)
 
 **Currently Implemented (Basic)**:
+
 - `x`, `y` - Axis columns
 - `by` - Grouping column
 - `markers` - Show markers on line
@@ -280,6 +284,7 @@ Expose ALL available parameters for scatter and line chart types with commonly-u
 - `log_x`, `log_y` - Log scale axes
 
 **New Basic Parameters**:
+
 - `size` - Line marker size column
 - `line_dash` - Line dash pattern column
 - `width` - Line width column
@@ -289,6 +294,7 @@ Expose ALL available parameters for scatter and line chart types with commonly-u
 - `hover_name` - Hover tooltip name column
 
 **New Advanced Parameters** (in collapsible section):
+
 - Error bars:
   - `error_x` - X error bar column
   - `error_x_minus` - X error bar minus column
@@ -324,46 +330,46 @@ Expose ALL available parameters for scatter and line chart types with commonly-u
 ```python
 class ChartConfig(TypedDict):
     # ... existing fields ...
-    
+
     # Text and hover
     text: NotRequired[str]
     hover_name: NotRequired[str]
-    
+
     # Error bars
     error_x: NotRequired[str]
     error_x_minus: NotRequired[str]
     error_y: NotRequired[str]
     error_y_minus: NotRequired[str]
-    
+
     # Design mappings (string-based for simplicity)
     color_discrete_sequence: NotRequired[list[str]]
     symbol_sequence: NotRequired[list[str]]
     size_sequence: NotRequired[list[int]]
     line_dash_sequence: NotRequired[list[str]]  # line only
     width_sequence: NotRequired[list[int]]  # line only
-    
+
     # Continuous color
     color_continuous_scale: NotRequired[list[str]]
     range_color: NotRequired[list[float]]
     color_continuous_midpoint: NotRequired[float]
-    
+
     # Axis ranges
     range_x: NotRequired[list[int | float]]
     range_y: NotRequired[list[int | float]]
     xaxis_titles: NotRequired[list[str] | str]
     yaxis_titles: NotRequired[list[str] | str]
-    
+
     # Marginal plots (scatter only)
     marginal_x: NotRequired[Literal["histogram", "box", "violin", "rug"]]
     marginal_y: NotRequired[Literal["histogram", "box", "violin", "rug"]]
-    
+
     # Line-specific
     line_dash: NotRequired[str]  # column name
     width: NotRequired[str]  # column name
-    
+
     # Labels dict (for renaming in tooltips/legends)
     labels: NotRequired[dict[str, str]]
-    
+
     # Rendering
     template: NotRequired[str]
     render_mode: NotRequired[Literal["webgl", "svg"]]

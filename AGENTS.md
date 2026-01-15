@@ -145,6 +145,32 @@ When making changes to this repository:
 3. **Document new components** - Add docstrings and update relevant documentation
 4. **Create PLAN.md first** - Always plan before implementing a new example
 
+## Running Tests
+
+### Unit Tests
+
+Unit tests can be run directly:
+
+```bash
+python -m pytest examples/example-name/unit/ -v
+```
+
+### E2E Tests
+
+**IMPORTANT: Always run e2e tests in a background terminal.** E2E tests require a running Deephaven server. If you run e2e tests in a foreground terminal, it will block and potentially kill the server process that was started for manual testing.
+
+**NEVER run `sleep` commands in the foreground terminal.** Running `sleep` will kill any running server or test process. If you need to wait for output, use `get_terminal_output` to check on background processes instead.
+
+```bash
+# Start the server first (in a separate terminal or background)
+python scripts/run_example.py example-name
+
+# Run e2e tests in a BACKGROUND terminal
+DH_PSK=<psk_from_server_output> python -m pytest examples/example-name/e2e/ -v
+```
+
+The PSK (pre-shared key) is displayed in the server output when it starts.
+
 ## Viewing Demos
 
 When opening a link to view an example demo in the browser, **always use the iframe/widget URL pattern** instead of the main Deephaven UI URL:

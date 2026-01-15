@@ -25,7 +25,7 @@ def widget_page(page: Page) -> Page:
     url = f"{BASE_URL}/iframe/widget/?name=iris_chart_builder&psk={PSK}"
     page.goto(url, timeout=30000)
     # Wait for the chart builder UI to load using exact text match
-    page.get_by_text("Chart Type", exact=True).wait_for(timeout=15000)
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
     return page
 
 
@@ -125,7 +125,7 @@ def ohlc_widget_page(page: Page) -> Page:
     url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
     page.goto(url, timeout=30000)
     # Wait for the chart builder UI to load using exact text match
-    page.get_by_text("Chart Type", exact=True).wait_for(timeout=15000)
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
     
     # Select the OHLC sample dataset
     dataset_picker = page.locator("button:has-text('Iris')")
@@ -252,7 +252,7 @@ def flights_widget_page(page: Page) -> Page:
     url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
     page.goto(url, timeout=30000)
     # Wait for the chart builder UI to load using exact text match
-    page.get_by_text("Chart Type", exact=True).wait_for(timeout=15000)
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
     
     # Select the Flights dataset
     dataset_picker = page.locator("button:has-text('Iris')")
@@ -270,7 +270,7 @@ def outages_widget_page(page: Page) -> Page:
     url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
     page.goto(url, timeout=30000)
     # Wait for the chart builder UI to load using exact text match
-    page.get_by_text("Chart Type", exact=True).wait_for(timeout=15000)
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
     
     # Select the Outages dataset
     dataset_picker = page.locator("button:has-text('Iris')")
@@ -288,9 +288,9 @@ def select_chart_type(page: Page, chart_type_name: str):
     The chart type dropdown uses virtual scrolling, so items at the bottom
     of the list aren't rendered until we scroll to them.
     """
-    # The Chart Type picker button displays the current selection (default is "Scatter")
-    # Look for a button with "Scatter" text (the default selected chart type)
-    chart_type_button = page.locator("button:has-text('Scatter')")
+    # The Chart Type picker button has aria-labelledby that includes "Chart Type"
+    # Use get_by_role to specifically target the chart type picker button
+    chart_type_button = page.get_by_role("button", name="Scatter Chart Type")
     chart_type_button.click()
     page.wait_for_timeout(500)
     
@@ -572,3 +572,169 @@ class TestMapChartE2E:
         # Verify Location Mode picker is visible
         location_mode_control = page.get_by_label("Location Mode").locator("visible=true").first
         expect(location_mode_control).to_be_visible()
+
+
+@pytest.fixture
+def advanced_options_page(page: Page) -> Page:
+    """Navigate to the chart_builder_demo widget for advanced options testing.
+    
+    Note: Advanced Options are only available in chart_builder_app (chart_builder_demo),
+    not in the simpler chart_builder function (iris_chart_builder).
+    """
+    url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+    page.goto(url, timeout=30000)
+    # Wait for the chart builder UI to load
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+    return page
+
+
+@pytest.mark.e2e
+class TestAdvancedOptionsE2E:
+    """End-to-end tests for Advanced Options in scatter/line charts."""
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_advanced_options_disclosure_visible_for_scatter(self, advanced_options_page: Page):
+        """Test that Advanced Options disclosure is visible for scatter charts."""
+        page = advanced_options_page
+        
+        # The disclosure should be visible (collapsed by default)
+        # The disclosure title may be rendered as a button or heading
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        expect(advanced_options).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_advanced_options_expands(self, advanced_options_page: Page):
+        """Test that clicking Advanced Options expands the section."""
+        page = advanced_options_page
+        
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+        
+        # After expanding, should see inner controls like "Text Labels"
+        text_labels = page.get_by_label("Text Labels")
+        expect(text_labels.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_xaxis_title_field_visible_when_expanded(self, advanced_options_page: Page):
+        """Test that X Axis Title field is visible when Advanced Options is expanded."""
+        page = advanced_options_page
+        
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+        
+        # X Axis Title field should be visible
+        xaxis_title = page.get_by_label("X Axis Title")
+        expect(xaxis_title.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_xaxis_title_updates_generated_code(self, advanced_options_page: Page):
+        """Test that setting X Axis Title updates the generated code."""
+        page = advanced_options_page
+        
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+        
+        # Enter a value in X Axis Title field
+        xaxis_title_input = page.get_by_label("X Axis Title")
+        xaxis_title_input.fill("My Custom X Title")
+        page.wait_for_timeout(500)
+        
+        # The generated code is always visible in chart_builder_demo
+        # Check that xaxis_titles appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text("xaxis_titles")
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_template_picker_updates_chart(self, advanced_options_page: Page):
+        """Test that changing template updates the chart."""
+        page = advanced_options_page
+        
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+        
+        # Select a template
+        template_picker = page.get_by_role("button", name="Template")
+        template_picker.click()
+        page.wait_for_timeout(300)
+        
+        # Select plotly_dark
+        page.get_by_test_id("popover").get_by_text("plotly_dark").click()
+        page.wait_for_timeout(1000)
+        
+        # The generated code is always visible in chart_builder_demo
+        # Check that template appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text('template="plotly_dark"')
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_log_x_checkbox_updates_chart(self, advanced_options_page: Page):
+        """Test that toggling Log X checkbox updates the chart."""
+        page = advanced_options_page
+        
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+        
+        # Click the Log X checkbox - use click with force for React Aria checkboxes
+        log_x_checkbox = page.get_by_label("Log X")
+        log_x_checkbox.click(force=True)
+        page.wait_for_timeout(500)
+        
+        # The generated code is always visible in chart_builder_demo
+        # Check that log_x appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text("log_x=True")
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_marginal_x_picker_visible_for_scatter(self, advanced_options_page: Page):
+        """Test that Marginal X picker is visible for scatter charts."""
+        page = advanced_options_page
+        
+        # Click to expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+        
+        # Marginal X picker should be visible (scatter-only)
+        marginal_x = page.get_by_label("Marginal X")
+        expect(marginal_x.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_advanced_options_not_visible_for_bar(self, advanced_options_page: Page):
+        """Test that Advanced Options is NOT visible for bar charts."""
+        page = advanced_options_page
+        
+        # Switch to bar chart
+        chart_type_button = page.get_by_role("button", name="Scatter Chart Type")
+        chart_type_button.click()
+        page.get_by_test_id("popover").get_by_text("Bar", exact=True).click()
+        page.wait_for_timeout(500)
+        
+        # Advanced Options should NOT be visible for bar charts
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        expect(advanced_options).not_to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_advanced_options_visible_for_line(self, advanced_options_page: Page):
+        """Test that Advanced Options IS visible for line charts."""
+        page = advanced_options_page
+        
+        # Switch to line chart
+        chart_type_button = page.get_by_role("button", name="Scatter Chart Type")
+        chart_type_button.click()
+        page.get_by_test_id("popover").get_by_text("Line", exact=True).click()
+        page.wait_for_timeout(500)
+        
+        # Advanced Options should be visible for line charts
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        expect(advanced_options).to_be_visible()
+        expect(advanced_options).to_be_visible()
