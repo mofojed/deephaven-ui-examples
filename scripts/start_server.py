@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import secrets
 import sys
 import time
 
@@ -29,17 +30,19 @@ def start_server(port: int = 10000, examples_dir: str | None = None) -> None:
     if not os.path.isdir(examples_dir):
         print(f"Warning: Examples directory not found: {examples_dir}")
 
+    # Generate a PSK token for authentication
+    psk_token = secrets.token_urlsafe(12)
+
     print(f"Starting Deephaven server on port {port}...")
     print(f"Examples directory: {examples_dir}")
 
-    # Start the server
-    server = Server(port=port)
+    # Start the server with PSK authentication
+    server = Server(port=port, jvm_args=[f"-Dauthentication.psk={psk_token}"])
     server.start()
 
     print()
     print(f"Deephaven server is running!")
-    print(f"  Web UI: http://localhost:{port}/ide/")
-    print(f"  Examples available at: /data/examples/")
+    print(f"  Web UI: http://localhost:{port}/?psk={psk_token}")
     print()
     print("Press Ctrl+C to stop the server.")
 

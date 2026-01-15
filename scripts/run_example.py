@@ -69,6 +69,8 @@ def run_example(
         port: Port the Deephaven server is running on.
         examples_dir: Path to the examples directory.
     """
+    import secrets
+    
     try:
         from deephaven_server import Server
     except ImportError:
@@ -100,8 +102,11 @@ def run_example(
         print(f"Error: No Python file found in example '{example_name}'")
         sys.exit(1)
 
+    # Generate a PSK token for authentication
+    psk_token = secrets.token_urlsafe(12)
+
     print(f"Starting Deephaven server on port {port}...")
-    server = Server(port=port)
+    server = Server(port=port, jvm_args=[f"-Dauthentication.psk={psk_token}"])
     server.start()
 
     print(f"Running example: {example_name}")
@@ -118,7 +123,7 @@ def run_example(
 
     print()
     print(f"Example is running!")
-    print(f"  Web UI: http://localhost:{port}/ide/")
+    print(f"  Web UI: http://localhost:{port}/?psk={psk_token}")
     print()
     print("Press Ctrl+C to stop.")
 
