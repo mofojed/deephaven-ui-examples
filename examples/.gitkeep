@@ -1,8 +1,0 @@
-# Examples
-
-This directory contains deephaven.ui example applications.
-
-Each subdirectory is a self-contained example with:
-- `PLAN.md` - Design plan and implementation details
-- `README.md` - Usage instructions and screenshots
-- Python source files

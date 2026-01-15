@@ -1,0 +1,4 @@
+deephaven-core
+deephaven-server
+deephaven-plugin-ui
+deephaven-plugin-plotly-express

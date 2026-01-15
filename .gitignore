@@ -49,3 +49,10 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Playwright
+playwright/
+playwright-report/
+test-results/
+*.png
+!examples/**/screenshot.png

@@ -9,52 +9,129 @@ This repository contains example usages of [deephaven.ui](https://github.com/dee
 
 ## Project Structure
 
-Each example lives in its own subfolder with the following structure:
-
 ```
-examples/
-├── example-name/
-│   ├── PLAN.md           # Design plan and implementation details
-│   ├── README.md         # Usage instructions and screenshots
-│   ├── example_name.py   # Main example code
-│   └── ...               # Additional files as needed
+deephaven-ui-examples/
+├── README.md                 # This file
+├── AGENTS.md                 # AI agent instructions
+├── requirements.txt          # Python dependencies
+├── requirements-dev.txt      # Development dependencies
+├── setup.sh                  # Setup script
+├── pytest.ini                # Pytest configuration
+├── scripts/
+│   ├── start_server.py       # Start Deephaven server
+│   └── run_example.py        # Run a specific example
+├── tests/
+│   ├── conftest.py           # Shared pytest fixtures
+│   └── e2e/
+│       └── conftest.py       # Playwright fixtures
+└── examples/
+    └── example-name/
+        ├── PLAN.md           # Design plan
+        ├── README.md         # Usage instructions
+        ├── app.py            # Main example code
+        ├── unit/             # Unit tests
+        │   └── test_*.py
+        └── e2e/              # E2E tests
+            └── test_*.py
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Deephaven](https://deephaven.io/) server running (v0.36.0+)
-- `deephaven-plugin-ui` installed
+- Python 3.9+
+- [Deephaven](https://deephaven.io/) (installed via pip)
 
 ### Installation
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/deephaven/deephaven-ui-examples.git
    cd deephaven-ui-examples
    ```
 
-2. Start your Deephaven server with the examples directory mounted:
+2. Run the setup script:
+
    ```bash
-   # Using Docker
-   docker run -it --rm -p 10000:10000 \
-     -v $(pwd):/data/examples \
-     ghcr.io/deephaven/server:latest
+   # Basic setup
+   ./setup.sh
+
+   # With development dependencies (pytest, playwright)
+   ./setup.sh --dev
    ```
 
-3. Navigate to an example folder and follow its README for specific usage instructions.
+3. Activate the virtual environment:
+
+   ```bash
+   source .venv/bin/activate
+   ```
 
 ### Running Examples
 
-Each example can be run by importing it in the Deephaven console:
+**Option 1: Using the run script**
 
-```python
-# Example: Running a specific example
-exec(open('/data/examples/example-name/example_name.py').read())
+```bash
+# List available examples
+python scripts/run_example.py --list
+
+# Run a specific example
+python scripts/run_example.py hello-world
 ```
 
-Or by copying the code directly into a Deephaven notebook.
+**Option 2: Start server and run manually**
+
+```bash
+# Start the server
+python scripts/start_server.py
+
+# Then in the Deephaven console, run:
+exec(open('/path/to/examples/hello-world/app.py').read())
+```
+
+**Option 3: Using Docker**
+
+```bash
+docker run -it --rm -p 10000:10000 \
+  -v $(pwd):/data/examples \
+  ghcr.io/deephaven/server:latest
+```
+
+## Testing
+
+### Unit Tests
+
+Run all unit tests:
+
+```bash
+pytest examples/*/unit/
+```
+
+Run tests for a specific example:
+
+```bash
+pytest examples/hello-world/unit/
+```
+
+### E2E Tests
+
+Run all E2E tests (requires Playwright browsers):
+
+```bash
+pytest examples/*/e2e/
+```
+
+Run with headed browser for debugging:
+
+```bash
+pytest examples/*/e2e/ --headed
+```
+
+Run all tests for a specific example:
+
+```bash
+pytest examples/hello-world/
+```
 
 ## Custom Components
 
@@ -66,7 +143,7 @@ from deephaven import ui
 @ui.component
 def my_custom_component(name: str):
     """A simple greeting component.
-    
+
     Args:
         name: The name to display in the greeting.
     """
@@ -76,8 +153,8 @@ def my_custom_component(name: str):
 ## Examples
 
 | Example | Description |
-|---------|-------------|
-| *Coming soon* | *Examples will be listed here as they are added* |
+| ------- | ----------- |
+| [hello-world](examples/hello-world/) | Basic component and state management demo |
 
 ## Resources
 

@@ -10,14 +10,31 @@ This repository contains example applications and custom components built with [
 
 ```
 deephaven-ui-examples/
-├── README.md          # Project documentation
-├── AGENTS.md          # This file - agent instructions
-├── .gitignore         # Git ignore rules
-└── examples/          # Example applications
+├── README.md                 # Project documentation
+├── AGENTS.md                 # This file - agent instructions
+├── PLAN.md                   # Project scaffolding plan
+├── .gitignore                # Git ignore rules
+├── requirements.txt          # Python dependencies
+├── requirements-dev.txt      # Development dependencies
+├── setup.sh                  # Setup script
+├── pytest.ini                # Pytest configuration
+├── scripts/
+│   ├── start_server.py       # Start Deephaven server
+│   └── run_example.py        # Run a specific example
+├── tests/
+│   ├── conftest.py           # Shared pytest fixtures
+│   └── e2e/
+│       └── conftest.py       # Playwright fixtures
+└── examples/
     └── example-name/
-        ├── PLAN.md        # Design plan (create FIRST before coding)
-        ├── README.md      # Usage instructions and screenshots
-        └── *.py           # Example code files
+        ├── PLAN.md           # Design plan (create FIRST before coding)
+        ├── README.md         # Usage instructions and screenshots
+        ├── app.py            # Main example code
+        ├── __init__.py       # Package init
+        ├── unit/             # Unit tests for this example
+        │   └── test_unit.py  # Use unique names to avoid conflicts
+        └── e2e/              # E2E tests for this example
+            └── test_*.py
 ```
 
 ## Creating a New Example
@@ -36,21 +53,26 @@ When creating a new example, follow this workflow:
 # Example Name
 
 ## Goal
+
 What are we trying to demonstrate or build?
 
 ## Features
+
 - Feature 1
 - Feature 2
 
 ## Implementation Details
+
 - Key technical decisions
 - Components to create
 - Data sources needed
 
 ## UI Layout
+
 Description or ASCII mockup of the intended layout
 
 ## Dependencies
+
 Any special dependencies or Deephaven features required
 ```
 
@@ -62,18 +84,22 @@ Any special dependencies or Deephaven features required
 Brief description of what this example demonstrates.
 
 ## Screenshot
+
 ![Screenshot](screenshot.png)
 
 ## Features
+
 - Feature 1
 - Feature 2
 
 ## Usage
+
 \`\`\`python
 exec(open('/data/examples/example-name/main.py').read())
 \`\`\`
 
 ## How It Works
+
 Explanation of the key concepts demonstrated.
 ```
 
@@ -91,10 +117,10 @@ from deephaven import ui
 @ui.component
 def component_name(param: type) -> ui.Element:
     """Brief description of the component.
-    
+
     Args:
         param: Description of the parameter.
-    
+
     Returns:
         A UI element displaying...
     """
@@ -122,4 +148,5 @@ When making changes to this repository:
 ## Resources
 
 - [deephaven.ui Documentation](https://deephaven.io/core/docs/how-to-guides/user-interface/overview/)
+- [deephaven.ui GitHub](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/ui)
 - [deephaven.ui GitHub](https://github.com/deephaven/deephaven-plugins/tree/main/plugins/ui)
