@@ -4,7 +4,7 @@ from typing import Literal, TypedDict, NotRequired
 
 
 # Chart types supported
-ChartType = Literal["scatter", "line", "bar", "area", "pie"]
+ChartType = Literal["scatter", "line", "bar", "area", "pie", "histogram", "box", "violin", "strip", "density_heatmap"]
 
 # Line shape options (spline is NOT supported by dx.line)
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
@@ -50,6 +50,9 @@ class ChartConfig(TypedDict):
     names: NotRequired[str]
     values: NotRequired[str]
     
+    # Histogram-specific options
+    nbins: NotRequired[int]
+    
     # Axis options
     log_x: NotRequired[bool]
     log_y: NotRequired[bool]
@@ -68,6 +71,10 @@ def get_required_fields(chart_type: ChartType) -> list[str]:
         return ["x", "y"]
     elif chart_type == "pie":
         return ["names", "values"]
+    elif chart_type == "histogram":
+        return []  # x OR y, validated separately
+    elif chart_type in ("box", "violin", "strip", "density_heatmap"):
+        return ["x", "y"]
     return []
 
 
@@ -85,6 +92,12 @@ def validate_config(config: ChartConfig) -> list[str]:
     chart_type = config.get("chart_type")
     if not chart_type:
         errors.append("chart_type is required")
+        return errors
+    
+    # Special validation for histogram (needs x OR y)
+    if chart_type == "histogram":
+        if not config.get("x") and not config.get("y"):
+            errors.append("x or y is required for histogram charts")
         return errors
     
     required = get_required_fields(chart_type)

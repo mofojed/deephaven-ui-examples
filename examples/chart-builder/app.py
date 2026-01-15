@@ -21,7 +21,10 @@ if TYPE_CHECKING:
 # Type Definitions
 # =============================================================================
 
-ChartType = Literal["scatter", "line", "bar", "area", "pie"]
+ChartType = Literal[
+    "scatter", "line", "bar", "area", "pie",
+    "histogram", "box", "violin", "strip", "density_heatmap"
+]
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
 Orientation = Literal["v", "h"]
 
@@ -45,6 +48,8 @@ class ChartConfig(TypedDict):
     # Pie options
     names: NotRequired[str]
     values: NotRequired[str]
+    # Histogram options
+    nbins: NotRequired[int]
 
 
 # =============================================================================
@@ -68,6 +73,21 @@ def _validate_config(config: ChartConfig) -> list[str]:
             errors.append("names is required for pie charts")
         if not config.get("values"):
             errors.append("values is required for pie charts")
+    elif chart_type == "histogram":
+        # Histogram needs at least x OR y
+        if not config.get("x") and not config.get("y"):
+            errors.append("x or y is required for histogram charts")
+    elif chart_type in ("box", "violin", "strip"):
+        # These need x and y
+        if not config.get("x"):
+            errors.append(f"x is required for {chart_type} charts")
+        if not config.get("y"):
+            errors.append(f"y is required for {chart_type} charts")
+    elif chart_type == "density_heatmap":
+        if not config.get("x"):
+            errors.append("x is required for density_heatmap charts")
+        if not config.get("y"):
+            errors.append("y is required for density_heatmap charts")
     return errors
 
 
@@ -131,6 +151,60 @@ def _make_pie(table: Table, config: ChartConfig):
     return dx.pie(table, **kwargs)
 
 
+def _make_histogram(table: Table, config: ChartConfig):
+    """Create a histogram."""
+    kwargs = {}
+    if config.get("x"):
+        kwargs["x"] = config["x"]
+    if config.get("y"):
+        kwargs["y"] = config["y"]
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    if config.get("nbins"):
+        kwargs["nbins"] = config["nbins"]
+    return dx.histogram(table, **kwargs)
+
+
+def _make_box(table: Table, config: ChartConfig):
+    """Create a box plot."""
+    kwargs = {"x": config["x"], "y": config["y"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.box(table, **kwargs)
+
+
+def _make_violin(table: Table, config: ChartConfig):
+    """Create a violin plot."""
+    kwargs = {"x": config["x"], "y": config["y"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.violin(table, **kwargs)
+
+
+def _make_strip(table: Table, config: ChartConfig):
+    """Create a strip plot."""
+    kwargs = {"x": config["x"], "y": config["y"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.strip(table, **kwargs)
+
+
+def _make_density_heatmap(table: Table, config: ChartConfig):
+    """Create a density heatmap."""
+    kwargs = {"x": config["x"], "y": config["y"]}
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.density_heatmap(table, **kwargs)
+
+
 def make_chart(table: Table, config: ChartConfig):
     """Create a chart from the given table and configuration."""
     errors = _validate_config(config)
@@ -148,6 +222,16 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_area(table, config)
     elif chart_type == "pie":
         return _make_pie(table, config)
+    elif chart_type == "histogram":
+        return _make_histogram(table, config)
+    elif chart_type == "box":
+        return _make_box(table, config)
+    elif chart_type == "violin":
+        return _make_violin(table, config)
+    elif chart_type == "strip":
+        return _make_strip(table, config)
+    elif chart_type == "density_heatmap":
+        return _make_density_heatmap(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -162,6 +246,11 @@ CHART_TYPES = [
     {"key": "bar", "label": "Bar", "icon": "vsGraphLeft"},
     {"key": "area", "label": "Area", "icon": "vsGraph"},
     {"key": "pie", "label": "Pie", "icon": "vsPieChart"},
+    {"key": "histogram", "label": "Histogram", "icon": "vsGraphLeft"},
+    {"key": "box", "label": "Box", "icon": "vsSymbolClass"},
+    {"key": "violin", "label": "Violin", "icon": "vsSymbolClass"},
+    {"key": "strip", "label": "Strip", "icon": "vsEllipsis"},
+    {"key": "density_heatmap", "label": "Density Heatmap", "icon": "vsSymbolColor"},
 ]
 
 ORIENTATIONS = [
@@ -254,6 +343,9 @@ def chart_builder(table: Table) -> ui.Element:
     names_col, set_names_col = ui.use_state("")
     values_col, set_values_col = ui.use_state("")
     
+    # Histogram-specific state
+    nbins, set_nbins = ui.use_state(10)
+    
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
         """Update a group by column at a specific index."""
@@ -305,6 +397,27 @@ def chart_builder(table: Table) -> ui.Element:
         if values_col:
             config["values"] = values_col
     
+    # Histogram config
+    if chart_type == "histogram":
+        if x_col:
+            config["x"] = x_col
+        if y_col:
+            config["y"] = y_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if nbins:
+            config["nbins"] = nbins
+    
+    # Box, violin, strip, density_heatmap config
+    if chart_type in ("box", "violin", "strip", "density_heatmap"):
+        if x_col:
+            config["x"] = x_col
+        if y_col:
+            config["y"] = y_col
+        # Group by for box, violin, strip (not density_heatmap)
+        if chart_type in ("box", "violin", "strip") and by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+    
     if title:
         config["title"] = title
     
@@ -330,6 +443,10 @@ def chart_builder(table: Table) -> ui.Element:
         can_create_chart = bool(x_col and y_col)
     elif chart_type == "pie":
         can_create_chart = bool(names_col and values_col)
+    elif chart_type == "histogram":
+        can_create_chart = bool(x_col or y_col)  # Only need one
+    elif chart_type in ("box", "violin", "strip", "density_heatmap"):
+        can_create_chart = bool(x_col and y_col)
     
     # Create chart if we have valid configuration
     chart = None
@@ -358,7 +475,7 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ),
             
-            # X and Y columns side by side (for scatter, line, bar, area)
+            # X and Y columns side by side (for scatter, line, bar, area, box, violin, strip, density_heatmap)
             ui.flex(
                 ui.picker(
                     *[ui.item(item["label"], key=item["key"]) for item in column_items],
@@ -377,7 +494,28 @@ def chart_builder(table: Table) -> ui.Element:
                 direction="row",
                 gap="size-100",
                 width="100%",
-            ) if chart_type in ("scatter", "line", "bar", "area") else None,
+            ) if chart_type in ("scatter", "line", "bar", "area", "box", "violin", "strip", "density_heatmap") else None,
+            
+            # X and/or Y for histogram (only one required)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="X",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Y",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "histogram" else None,
             
             # Names and Values columns (for pie)
             ui.flex(
@@ -400,7 +538,7 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ) if chart_type == "pie" else None,
             
-            # Group by (not for pie) - cascading dropdowns
+            # Group by (for charts that support it - not pie or density_heatmap)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
                 *[ui.flex(
@@ -426,7 +564,17 @@ def chart_builder(table: Table) -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type != "pie" else None,
+            ) if chart_type not in ("pie", "density_heatmap") else None,
+            
+            # Histogram-specific options
+            ui.number_field(
+                label="Number of Bins",
+                value=nbins,
+                on_change=set_nbins,
+                min_value=1,
+                max_value=1000,
+                width="100%",
+            ) if chart_type == "histogram" else None,
             
             # Scatter-specific options
             ui.flex(
@@ -496,7 +644,12 @@ def chart_builder(table: Table) -> ui.Element:
     )
     
     # Chart area - update placeholder message based on chart type
-    placeholder_msg = "Select Names and Values columns to preview chart" if chart_type == "pie" else "Select X and Y columns to preview chart"
+    if chart_type == "pie":
+        placeholder_msg = "Select Names and Values columns to preview chart"
+    elif chart_type == "histogram":
+        placeholder_msg = "Select X or Y column to preview chart"
+    else:
+        placeholder_msg = "Select X and Y columns to preview chart"
     
     chart_area = ui.view(
         ui.text(error_message, UNSAFE_style={"color": "var(--spectrum-negative-color-900)"}) if error_message 
@@ -555,6 +708,9 @@ def chart_builder_app() -> ui.Element:
     # Pie-specific state
     names_col, set_names_col = ui.use_state("")
     values_col, set_values_col = ui.use_state("")
+    
+    # Histogram-specific state
+    nbins, set_nbins = ui.use_state(10)
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -632,13 +788,21 @@ def chart_builder_app() -> ui.Element:
             config["names"] = names_col
         if values_col:
             config["values"] = values_col
+    elif chart_type == "histogram":
+        if nbins:
+            config["nbins"] = nbins
     
-    # Create chart based on chart type requirements
-    # Pie needs names and values, others need x and y
-    can_create_chart = (
-        (chart_type == "pie" and names_col and values_col) or
-        (chart_type != "pie" and x_col and y_col)
-    )
+    # Determine if chart can be created
+    can_create_chart = False
+    if chart_type in ("scatter", "line", "bar", "area"):
+        can_create_chart = bool(x_col and y_col)
+    elif chart_type == "pie":
+        can_create_chart = bool(names_col and values_col)
+    elif chart_type == "histogram":
+        can_create_chart = bool(x_col or y_col)  # Only need one
+    elif chart_type in ("box", "violin", "strip", "density_heatmap"):
+        can_create_chart = bool(x_col and y_col)
+    
     chart = None
     error_message = None
     
@@ -678,6 +842,7 @@ def chart_builder_app() -> ui.Element:
             ),
             
             # X and Y columns side by side (for non-pie charts)
+            # X and Y columns side by side (for scatter, line, bar, area, box, violin, strip, density_heatmap)
             ui.flex(
                 ui.picker(
                     *[ui.item(item["label"], key=item["key"]) for item in column_items],
@@ -696,7 +861,28 @@ def chart_builder_app() -> ui.Element:
                 direction="row",
                 gap="size-100",
                 width="100%",
-            ) if chart_type != "pie" else None,
+            ) if chart_type in ("scatter", "line", "bar", "area", "box", "violin", "strip", "density_heatmap") else None,
+            
+            # X and/or Y for histogram (only one required)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="X",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Y",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "histogram" else None,
             
             # Names and Values columns (for pie charts)
             ui.flex(
@@ -719,7 +905,7 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ) if chart_type == "pie" else None,
             
-            # Group by (not for pie charts) - cascading dropdowns
+            # Group by (for charts that support it - not pie or density_heatmap)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
                 *[ui.flex(
@@ -745,7 +931,17 @@ def chart_builder_app() -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type != "pie" else None,
+            ) if chart_type not in ("pie", "density_heatmap") else None,
+            
+            # Histogram-specific options
+            ui.number_field(
+                label="Number of Bins",
+                value=nbins,
+                on_change=set_nbins,
+                min_value=1,
+                max_value=1000,
+                width="100%",
+            ) if chart_type == "histogram" else None,
             
             # Scatter-specific options
             ui.flex(
@@ -815,7 +1011,12 @@ def chart_builder_app() -> ui.Element:
     )
     
     # Chart area - update placeholder message based on chart type
-    placeholder_msg = "Select Names and Values columns to preview chart" if chart_type == "pie" else "Select X and Y columns to preview chart"
+    if chart_type == "pie":
+        placeholder_msg = "Select Names and Values columns to preview chart"
+    elif chart_type == "histogram":
+        placeholder_msg = "Select X or Y column to preview chart"
+    else:
+        placeholder_msg = "Select X and Y columns to preview chart"
     
     chart_area = ui.view(
         ui.text(error_message, UNSAFE_style={"color": "var(--spectrum-negative-color-900)"}) if error_message 

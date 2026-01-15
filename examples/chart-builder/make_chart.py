@@ -44,6 +44,16 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_area(table, config)
     elif chart_type == "pie":
         return _make_pie(table, config)
+    elif chart_type == "histogram":
+        return _make_histogram(table, config)
+    elif chart_type == "box":
+        return _make_box(table, config)
+    elif chart_type == "violin":
+        return _make_violin(table, config)
+    elif chart_type == "strip":
+        return _make_strip(table, config)
+    elif chart_type == "density_heatmap":
+        return _make_density_heatmap(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -186,3 +196,126 @@ def _make_pie(table: Table, config: ChartConfig):
         kwargs["title"] = config["title"]
     
     return dx.pie(table, **kwargs)
+
+
+def _make_histogram(table: Table, config: ChartConfig):
+    """Create a histogram.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the histogram.
+    """
+    kwargs = {}
+    
+    # x or y (at least one required)
+    if config.get("x"):
+        kwargs["x"] = config["x"]
+    if config.get("y"):
+        kwargs["y"] = config["y"]
+    
+    # Optional parameters
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    if config.get("nbins"):
+        kwargs["nbins"] = config["nbins"]
+    
+    return dx.histogram(table, **kwargs)
+
+
+def _make_box(table: Table, config: ChartConfig):
+    """Create a box plot.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the box plot.
+    """
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+    }
+    
+    # Optional parameters
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.box(table, **kwargs)
+
+
+def _make_violin(table: Table, config: ChartConfig):
+    """Create a violin plot.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the violin plot.
+    """
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+    }
+    
+    # Optional parameters
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.violin(table, **kwargs)
+
+
+def _make_strip(table: Table, config: ChartConfig):
+    """Create a strip plot.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the strip plot.
+    """
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+    }
+    
+    # Optional parameters
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.strip(table, **kwargs)
+
+
+def _make_density_heatmap(table: Table, config: ChartConfig):
+    """Create a density heatmap.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the density heatmap.
+    """
+    kwargs = {
+        "x": config["x"],
+        "y": config["y"],
+    }
+    
+    # Optional parameters
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    
+    return dx.density_heatmap(table, **kwargs)

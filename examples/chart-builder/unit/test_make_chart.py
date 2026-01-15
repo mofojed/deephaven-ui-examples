@@ -258,3 +258,174 @@ class TestMakeChartCreation:
         
         chart = make_chart(table, config)
         assert chart is not None
+
+    # Phase 3: Distribution Plots
+    def test_make_histogram_with_x(self):
+        """Test creating a histogram with x column."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "histogram",
+            "x": "SepalLength",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_histogram_with_y(self):
+        """Test creating a histogram with y column."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "histogram",
+            "y": "SepalLength",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_histogram_with_nbins(self):
+        """Test creating a histogram with nbins option."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "histogram",
+            "x": "SepalLength",
+            "nbins": 20,
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_histogram_with_by(self):
+        """Test creating a histogram with grouping."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "histogram",
+            "x": "SepalLength",
+            "by": "Species",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_box_chart(self):
+        """Test creating a basic box chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "box",
+            "x": "Species",
+            "y": "SepalLength",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_box_chart_with_by(self):
+        """Test creating a box chart with grouping."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.tips()
+        config: ChartConfig = {
+            "chart_type": "box",
+            "x": "Day",
+            "y": "TotalBill",
+            "by": "Smoker",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_violin_chart(self):
+        """Test creating a basic violin chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "violin",
+            "x": "Species",
+            "y": "SepalLength",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_violin_chart_with_by(self):
+        """Test creating a violin chart with grouping."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.tips()
+        config: ChartConfig = {
+            "chart_type": "violin",
+            "x": "Day",
+            "y": "TotalBill",
+            "by": "Sex",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_strip_chart(self):
+        """Test creating a basic strip chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "strip",
+            "x": "Species",
+            "y": "SepalLength",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_strip_chart_with_by(self):
+        """Test creating a strip chart with grouping."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.tips()
+        config: ChartConfig = {
+            "chart_type": "strip",
+            "x": "Day",
+            "y": "TotalBill",
+            "by": "Smoker",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_density_heatmap(self):
+        """Test creating a basic density heatmap."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "density_heatmap",
+            "x": "SepalLength",
+            "y": "SepalWidth",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_density_heatmap_with_title(self):
+        """Test creating a density heatmap with title."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.iris()
+        config: ChartConfig = {
+            "chart_type": "density_heatmap",
+            "x": "SepalLength",
+            "y": "SepalWidth",
+            "title": "Iris Density",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None

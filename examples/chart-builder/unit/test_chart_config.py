@@ -153,3 +153,95 @@ class TestChartConfig:
         errors = validate_config(config)
         assert len(errors) == 1
         assert "values is required" in errors[0]
+
+    # Phase 3: Distribution Plots
+    def test_get_required_fields_histogram(self):
+        """Test required fields for histogram - returns empty since x OR y is allowed."""
+        required = get_required_fields("histogram")
+        assert len(required) == 0  # x OR y validated separately
+
+    def test_validate_config_valid_histogram_with_x(self):
+        """Test validation passes for histogram with only x."""
+        config: ChartConfig = {"chart_type": "histogram", "x": "col1"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_valid_histogram_with_y(self):
+        """Test validation passes for histogram with only y."""
+        config: ChartConfig = {"chart_type": "histogram", "y": "col1"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_valid_histogram_with_both(self):
+        """Test validation passes for histogram with both x and y."""
+        config: ChartConfig = {"chart_type": "histogram", "x": "col1", "y": "col2"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_histogram_missing_both(self):
+        """Test validation fails for histogram without x or y."""
+        config: ChartConfig = {"chart_type": "histogram"}
+        errors = validate_config(config)
+        assert len(errors) == 1
+        assert "x or y is required" in errors[0]
+
+    def test_validate_config_histogram_with_nbins(self):
+        """Test validation passes for histogram with nbins."""
+        config: ChartConfig = {"chart_type": "histogram", "x": "col1", "nbins": 20}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_get_required_fields_box(self):
+        """Test required fields for box chart."""
+        required = get_required_fields("box")
+        assert "x" in required
+        assert "y" in required
+
+    def test_validate_config_valid_box(self):
+        """Test validation passes for valid box config."""
+        config: ChartConfig = {"chart_type": "box", "x": "col1", "y": "col2"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_box_missing_x(self):
+        """Test validation fails for box without x."""
+        config: ChartConfig = {"chart_type": "box", "y": "col1"}
+        errors = validate_config(config)
+        assert len(errors) == 1
+        assert "x is required" in errors[0]
+
+    def test_get_required_fields_violin(self):
+        """Test required fields for violin chart."""
+        required = get_required_fields("violin")
+        assert "x" in required
+        assert "y" in required
+
+    def test_validate_config_valid_violin(self):
+        """Test validation passes for valid violin config."""
+        config: ChartConfig = {"chart_type": "violin", "x": "col1", "y": "col2"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_get_required_fields_strip(self):
+        """Test required fields for strip chart."""
+        required = get_required_fields("strip")
+        assert "x" in required
+        assert "y" in required
+
+    def test_validate_config_valid_strip(self):
+        """Test validation passes for valid strip config."""
+        config: ChartConfig = {"chart_type": "strip", "x": "col1", "y": "col2"}
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_get_required_fields_density_heatmap(self):
+        """Test required fields for density_heatmap chart."""
+        required = get_required_fields("density_heatmap")
+        assert "x" in required
+        assert "y" in required
+
+    def test_validate_config_valid_density_heatmap(self):
+        """Test validation passes for valid density_heatmap config."""
+        config: ChartConfig = {"chart_type": "density_heatmap", "x": "col1", "y": "col2"}
+        errors = validate_config(config)
+        assert len(errors) == 0
