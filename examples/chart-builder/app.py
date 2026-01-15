@@ -25,7 +25,11 @@ ChartType = Literal[
     "scatter", "line", "bar", "area", "pie",
     "histogram", "box", "violin", "strip", "density_heatmap",
     "candlestick", "ohlc",
-    "treemap", "sunburst", "icicle", "funnel", "funnel_area"
+    "treemap", "sunburst", "icicle", "funnel", "funnel_area",
+    "scatter_3d", "line_3d",
+    "scatter_polar", "line_polar",
+    "scatter_ternary", "line_ternary",
+    "timeline"
 ]
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
 Orientation = Literal["v", "h"]
@@ -59,6 +63,18 @@ class ChartConfig(TypedDict):
     close: NotRequired[str]
     # Hierarchical chart options (treemap, sunburst, icicle)
     parents: NotRequired[str]
+    # 3D chart options
+    z: NotRequired[str]
+    # Polar chart options
+    r: NotRequired[str]
+    theta: NotRequired[str]
+    # Ternary chart options
+    a: NotRequired[str]
+    b: NotRequired[str]
+    c: NotRequired[str]
+    # Timeline chart options
+    x_start: NotRequired[str]
+    x_end: NotRequired[str]
 
 
 # =============================================================================
@@ -125,6 +141,32 @@ def _validate_config(config: ChartConfig) -> list[str]:
             errors.append("names is required for funnel_area charts")
         if not config.get("values"):
             errors.append("values is required for funnel_area charts")
+    elif chart_type in ("scatter_3d", "line_3d"):
+        if not config.get("x"):
+            errors.append(f"x is required for {chart_type} charts")
+        if not config.get("y"):
+            errors.append(f"y is required for {chart_type} charts")
+        if not config.get("z"):
+            errors.append(f"z is required for {chart_type} charts")
+    elif chart_type in ("scatter_polar", "line_polar"):
+        if not config.get("r"):
+            errors.append(f"r is required for {chart_type} charts")
+        if not config.get("theta"):
+            errors.append(f"theta is required for {chart_type} charts")
+    elif chart_type in ("scatter_ternary", "line_ternary"):
+        if not config.get("a"):
+            errors.append(f"a is required for {chart_type} charts")
+        if not config.get("b"):
+            errors.append(f"b is required for {chart_type} charts")
+        if not config.get("c"):
+            errors.append(f"c is required for {chart_type} charts")
+    elif chart_type == "timeline":
+        if not config.get("x_start"):
+            errors.append("x_start is required for timeline charts")
+        if not config.get("x_end"):
+            errors.append("x_end is required for timeline charts")
+        if not config.get("y"):
+            errors.append("y is required for timeline charts")
     return errors
 
 
@@ -321,6 +363,92 @@ def _make_funnel_area(table: Table, config: ChartConfig):
     return dx.funnel_area(table, **kwargs)
 
 
+def _make_scatter_3d(table: Table, config: ChartConfig):
+    """Create a 3D scatter plot."""
+    kwargs = {"x": config["x"], "y": config["y"], "z": config["z"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.scatter_3d(table, **kwargs)
+
+
+def _make_line_3d(table: Table, config: ChartConfig):
+    """Create a 3D line plot."""
+    kwargs = {"x": config["x"], "y": config["y"], "z": config["z"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.line_3d(table, **kwargs)
+
+
+def _make_scatter_polar(table: Table, config: ChartConfig):
+    """Create a polar scatter plot."""
+    kwargs = {"r": config["r"], "theta": config["theta"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.scatter_polar(table, **kwargs)
+
+
+def _make_line_polar(table: Table, config: ChartConfig):
+    """Create a polar line plot."""
+    kwargs = {"r": config["r"], "theta": config["theta"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.line_polar(table, **kwargs)
+
+
+def _make_scatter_ternary(table: Table, config: ChartConfig):
+    """Create a ternary scatter plot."""
+    kwargs = {"a": config["a"], "b": config["b"], "c": config["c"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.scatter_ternary(table, **kwargs)
+
+
+def _make_line_ternary(table: Table, config: ChartConfig):
+    """Create a ternary line plot."""
+    kwargs = {"a": config["a"], "b": config["b"], "c": config["c"]}
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.line_ternary(table, **kwargs)
+
+
+def _make_timeline(table: Table, config: ChartConfig):
+    """Create a timeline/Gantt chart."""
+    kwargs = {
+        "x_start": config["x_start"],
+        "x_end": config["x_end"],
+        "y": config["y"],
+    }
+    if config.get("by"):
+        kwargs["by"] = config["by"]
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.timeline(table, **kwargs)
+
+
 def make_chart(table: Table, config: ChartConfig):
     """Create a chart from the given table and configuration."""
     errors = _validate_config(config)
@@ -362,6 +490,20 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_funnel(table, config)
     elif chart_type == "funnel_area":
         return _make_funnel_area(table, config)
+    elif chart_type == "scatter_3d":
+        return _make_scatter_3d(table, config)
+    elif chart_type == "line_3d":
+        return _make_line_3d(table, config)
+    elif chart_type == "scatter_polar":
+        return _make_scatter_polar(table, config)
+    elif chart_type == "line_polar":
+        return _make_line_polar(table, config)
+    elif chart_type == "scatter_ternary":
+        return _make_scatter_ternary(table, config)
+    elif chart_type == "line_ternary":
+        return _make_line_ternary(table, config)
+    elif chart_type == "timeline":
+        return _make_timeline(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -388,6 +530,13 @@ CHART_TYPES = [
     {"key": "icicle", "label": "Icicle", "icon": "vsGraphLeft"},
     {"key": "funnel", "label": "Funnel", "icon": "vsTriangleDown"},
     {"key": "funnel_area", "label": "Funnel Area", "icon": "vsTriangleDown"},
+    {"key": "scatter_3d", "label": "Scatter 3D", "icon": "vsCircleFilled"},
+    {"key": "line_3d", "label": "Line 3D", "icon": "vsGraphLine"},
+    {"key": "scatter_polar", "label": "Scatter Polar", "icon": "vsCircleFilled"},
+    {"key": "line_polar", "label": "Line Polar", "icon": "vsGraphLine"},
+    {"key": "scatter_ternary", "label": "Scatter Ternary", "icon": "vsCircleFilled"},
+    {"key": "line_ternary", "label": "Line Ternary", "icon": "vsGraphLine"},
+    {"key": "timeline", "label": "Timeline", "icon": "vsCalendar"},
 ]
 
 ORIENTATIONS = [
@@ -417,6 +566,10 @@ DATASETS = [
     {"key": "ohlc_sample", "label": "Stocks OHLC (1min)", "description": "Stocks data binned into 1-minute OHLC"},
     {"key": "hierarchy_sample", "label": "Product Hierarchy", "description": "Hierarchical product sales data"},
     {"key": "funnel_sample", "label": "Sales Funnel", "description": "Sales funnel stages"},
+    {"key": "scatter_3d_sample", "label": "3D Points", "description": "Random 3D point cloud with categories"},
+    {"key": "polar_sample", "label": "Polar Data", "description": "Wind-like polar coordinate data"},
+    {"key": "ternary_sample", "label": "Ternary Data", "description": "Composition data (e.g., soil types)"},
+    {"key": "timeline_sample", "label": "Timeline", "description": "Project timeline with tasks"},
 ]
 
 
@@ -505,6 +658,140 @@ def _create_funnel_sample() -> Table:
     ])
 
 
+def _create_scatter_3d_sample() -> Table:
+    """Create a 3D scatter dataset.
+    
+    Creates random 3D points with categories for demonstrating 3D scatter/line.
+    """
+    from deephaven import new_table
+    from deephaven.column import string_col, double_col
+    import random
+    
+    # Generate random 3D points with categories
+    n_points = 100
+    random.seed(42)
+    
+    x_vals = [random.gauss(0, 1) for _ in range(n_points)]
+    y_vals = [random.gauss(0, 1) for _ in range(n_points)]
+    z_vals = [random.gauss(0, 1) for _ in range(n_points)]
+    categories = [random.choice(["A", "B", "C"]) for _ in range(n_points)]
+    sizes = [random.uniform(5, 20) for _ in range(n_points)]
+    
+    return new_table([
+        double_col("X", x_vals),
+        double_col("Y", y_vals),
+        double_col("Z", z_vals),
+        string_col("Category", categories),
+        double_col("Size", sizes),
+    ])
+
+
+def _create_polar_sample() -> Table:
+    """Create a polar coordinate dataset.
+    
+    Creates wind-like data with radius (speed) and theta (direction) values.
+    """
+    from deephaven import new_table
+    from deephaven.column import string_col, double_col, int_col
+    import random
+    import math
+    
+    # Generate wind-like polar data
+    n_points = 72
+    random.seed(42)
+    
+    # Directions from 0 to 360 degrees
+    theta_vals = [i * 5 for i in range(n_points)]  # 0, 5, 10, ..., 355
+    r_vals = [5 + random.gauss(3, 1.5) for _ in range(n_points)]  # Wind speeds
+    directions = [["N", "NE", "E", "SE", "S", "SW", "W", "NW"][int((t + 22.5) // 45) % 8] for t in theta_vals]
+    
+    return new_table([
+        double_col("R", r_vals),
+        int_col("Theta", theta_vals),
+        string_col("Direction", directions),
+    ])
+
+
+def _create_ternary_sample() -> Table:
+    """Create a ternary coordinate dataset.
+    
+    Creates composition data (e.g., soil types) where a + b + c = 1.
+    """
+    from deephaven import new_table
+    from deephaven.column import string_col, double_col
+    import random
+    
+    # Generate composition data (proportions that sum to 1)
+    n_points = 50
+    random.seed(42)
+    
+    a_vals = []
+    b_vals = []
+    c_vals = []
+    types = []
+    
+    for _ in range(n_points):
+        # Generate random proportions that sum to 1
+        raw_a = random.random()
+        raw_b = random.random()
+        raw_c = random.random()
+        total = raw_a + raw_b + raw_c
+        
+        a = raw_a / total
+        b = raw_b / total
+        c = raw_c / total
+        
+        a_vals.append(a)
+        b_vals.append(b)
+        c_vals.append(c)
+        
+        # Classify based on dominant component
+        if a > 0.5:
+            types.append("Sand")
+        elif b > 0.5:
+            types.append("Silt")
+        elif c > 0.5:
+            types.append("Clay")
+        else:
+            types.append("Loam")
+    
+    return new_table([
+        double_col("Sand", a_vals),
+        double_col("Silt", b_vals),
+        double_col("Clay", c_vals),
+        string_col("SoilType", types),
+    ])
+
+
+def _create_timeline_sample() -> Table:
+    """Create a timeline/Gantt chart dataset.
+    
+    Creates project tasks with start and end dates.
+    """
+    from deephaven import new_table
+    from deephaven.column import string_col, datetime_col
+    from deephaven.time import to_j_instant
+    
+    # Project timeline data
+    tasks = [
+        ("Planning", "2024-01-01T00:00:00Z", "2024-01-15T00:00:00Z", "Phase 1"),
+        ("Design", "2024-01-10T00:00:00Z", "2024-02-01T00:00:00Z", "Phase 1"),
+        ("Development", "2024-01-25T00:00:00Z", "2024-03-15T00:00:00Z", "Phase 2"),
+        ("Testing", "2024-03-01T00:00:00Z", "2024-03-31T00:00:00Z", "Phase 2"),
+        ("Deployment", "2024-03-25T00:00:00Z", "2024-04-05T00:00:00Z", "Phase 3"),
+        ("Documentation", "2024-02-15T00:00:00Z", "2024-04-01T00:00:00Z", "Phase 2"),
+        ("Training", "2024-03-20T00:00:00Z", "2024-04-10T00:00:00Z", "Phase 3"),
+        ("Launch", "2024-04-01T00:00:00Z", "2024-04-15T00:00:00Z", "Phase 3"),
+    ]
+    
+    return new_table([
+        string_col("Task", [t[0] for t in tasks]),
+        datetime_col("Start", [to_j_instant(t[1]) for t in tasks]),
+        datetime_col("End", [to_j_instant(t[2]) for t in tasks]),
+        string_col("Phase", [t[3] for t in tasks]),
+    ])
+
+
 def _load_dataset(name: str) -> Table:
     """Load a dataset by name."""
     if name == "ohlc_sample":
@@ -513,6 +800,14 @@ def _load_dataset(name: str) -> Table:
         return _create_hierarchy_sample()
     if name == "funnel_sample":
         return _create_funnel_sample()
+    if name == "scatter_3d_sample":
+        return _create_scatter_3d_sample()
+    if name == "polar_sample":
+        return _create_polar_sample()
+    if name == "ternary_sample":
+        return _create_ternary_sample()
+    if name == "timeline_sample":
+        return _create_timeline_sample()
 
     loaders = {
         "iris": dx.data.iris,
@@ -586,6 +881,22 @@ def chart_builder(table: Table) -> ui.Element:
     
     # Hierarchical chart state (treemap, sunburst, icicle)
     parents_col, set_parents_col = ui.use_state("")
+    
+    # 3D chart state
+    z_col, set_z_col = ui.use_state("")
+    
+    # Polar chart state
+    r_col, set_r_col = ui.use_state("")
+    theta_col, set_theta_col = ui.use_state("")
+    
+    # Ternary chart state
+    a_col, set_a_col = ui.use_state("")
+    b_col, set_b_col = ui.use_state("")
+    c_col, set_c_col = ui.use_state("")
+    
+    # Timeline chart state
+    x_start_col, set_x_start_col = ui.use_state("")
+    x_end_col, set_x_end_col = ui.use_state("")
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -714,6 +1025,63 @@ def chart_builder(table: Table) -> ui.Element:
         if values_col:
             config["values"] = values_col
     
+    # 3D chart config (scatter_3d, line_3d)
+    if chart_type in ("scatter_3d", "line_3d"):
+        if x_col:
+            config["x"] = x_col
+        if y_col:
+            config["y"] = y_col
+        if z_col:
+            config["z"] = z_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if chart_type == "scatter_3d":
+            if size_col:
+                config["size"] = size_col
+            if color_col:
+                config["color"] = color_col
+    
+    # Polar chart config (scatter_polar, line_polar)
+    if chart_type in ("scatter_polar", "line_polar"):
+        if r_col:
+            config["r"] = r_col
+        if theta_col:
+            config["theta"] = theta_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if chart_type == "scatter_polar":
+            if size_col:
+                config["size"] = size_col
+            if color_col:
+                config["color"] = color_col
+    
+    # Ternary chart config (scatter_ternary, line_ternary)
+    if chart_type in ("scatter_ternary", "line_ternary"):
+        if a_col:
+            config["a"] = a_col
+        if b_col:
+            config["b"] = b_col
+        if c_col:
+            config["c"] = c_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if chart_type == "scatter_ternary":
+            if size_col:
+                config["size"] = size_col
+            if color_col:
+                config["color"] = color_col
+    
+    # Timeline chart config
+    if chart_type == "timeline":
+        if x_start_col:
+            config["x_start"] = x_start_col
+        if x_end_col:
+            config["x_end"] = x_end_col
+        if y_col:
+            config["y"] = y_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+    
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -732,6 +1100,14 @@ def chart_builder(table: Table) -> ui.Element:
         can_create_chart = bool(x_col and y_col)
     elif chart_type == "funnel_area":
         can_create_chart = bool(names_col and values_col)
+    elif chart_type in ("scatter_3d", "line_3d"):
+        can_create_chart = bool(x_col and y_col and z_col)
+    elif chart_type in ("scatter_polar", "line_polar"):
+        can_create_chart = bool(r_col and theta_col)
+    elif chart_type in ("scatter_ternary", "line_ternary"):
+        can_create_chart = bool(a_col and b_col and c_col)
+    elif chart_type == "timeline":
+        can_create_chart = bool(x_start_col and x_end_col and y_col)
     
     # Create chart if we have valid configuration
     chart = None
@@ -942,6 +1318,111 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ) if chart_type == "funnel" else None,
             
+            # X, Y, Z columns (for 3D charts)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Y",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Z",
+                    selected_key=z_col,
+                    on_selection_change=set_z_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_3d", "line_3d") else None,
+            
+            # R and Theta columns (for polar charts)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="R (radius)",
+                    selected_key=r_col,
+                    on_selection_change=set_r_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Theta (angle)",
+                    selected_key=theta_col,
+                    on_selection_change=set_theta_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_polar", "line_polar") else None,
+            
+            # A, B, C columns (for ternary charts)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="A",
+                    selected_key=a_col,
+                    on_selection_change=set_a_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="B",
+                    selected_key=b_col,
+                    on_selection_change=set_b_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="C",
+                    selected_key=c_col,
+                    on_selection_change=set_c_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_ternary", "line_ternary") else None,
+            
+            # X Start, X End, Y columns (for timeline)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Start",
+                    selected_key=x_start_col,
+                    on_selection_change=set_x_start_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="End",
+                    selected_key=x_end_col,
+                    on_selection_change=set_x_end_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "timeline" else None,
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                label="Y (Task/Label)",
+                selected_key=y_col,
+                on_selection_change=set_y_col,
+                width="100%",
+            ) if chart_type == "timeline" else None,
+            
             # Group by (for charts that support it - not pie, density_heatmap, financial, or hierarchical)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
@@ -968,7 +1449,7 @@ def chart_builder(table: Table) -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area") else None,
+            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline") else None,
             
             # Histogram-specific options
             ui.number_field(
@@ -1127,6 +1608,22 @@ def chart_builder_app() -> ui.Element:
     # Hierarchical chart state
     parents_col, set_parents_col = ui.use_state("")
     
+    # 3D chart state
+    z_col, set_z_col = ui.use_state("")
+    
+    # Polar chart state
+    r_col, set_r_col = ui.use_state("")
+    theta_col, set_theta_col = ui.use_state("")
+    
+    # Ternary chart state
+    a_col, set_a_col = ui.use_state("")
+    b_col, set_b_col = ui.use_state("")
+    c_col, set_c_col = ui.use_state("")
+    
+    # Timeline chart state
+    x_start_col, set_x_start_col = ui.use_state("")
+    x_end_col, set_x_end_col = ui.use_state("")
+    
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
         """Update a group by column at a specific index."""
@@ -1163,6 +1660,14 @@ def chart_builder_app() -> ui.Element:
         set_low_col("")
         set_close_col("")
         set_parents_col("")
+        set_z_col("")
+        set_r_col("")
+        set_theta_col("")
+        set_a_col("")
+        set_b_col("")
+        set_c_col("")
+        set_x_start_col("")
+        set_x_end_col("")
     
     # Get column names from table
     columns = _get_column_names(table)
@@ -1248,6 +1753,60 @@ def chart_builder_app() -> ui.Element:
         if values_col:
             config["values"] = values_col
     
+    # 3D chart config (scatter_3d, line_3d)
+    if chart_type in ("scatter_3d", "line_3d"):
+        if x_col:
+            config["x"] = x_col
+        if y_col:
+            config["y"] = y_col
+        if z_col:
+            config["z"] = z_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if size_col:
+            config["size"] = size_col
+        if color_col:
+            config["color"] = color_col
+    
+    # Polar chart config (scatter_polar, line_polar)
+    if chart_type in ("scatter_polar", "line_polar"):
+        if r_col:
+            config["r"] = r_col
+        if theta_col:
+            config["theta"] = theta_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if size_col:
+            config["size"] = size_col
+        if color_col:
+            config["color"] = color_col
+    
+    # Ternary chart config (scatter_ternary, line_ternary)
+    if chart_type in ("scatter_ternary", "line_ternary"):
+        if a_col:
+            config["a"] = a_col
+        if b_col:
+            config["b"] = b_col
+        if c_col:
+            config["c"] = c_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+        if size_col:
+            config["size"] = size_col
+        if color_col:
+            config["color"] = color_col
+    
+    # Timeline chart config
+    if chart_type == "timeline":
+        if x_start_col:
+            config["x_start"] = x_start_col
+        if x_end_col:
+            config["x_end"] = x_end_col
+        if y_col:
+            config["y"] = y_col
+        if by_cols:
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
+    
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -1266,6 +1825,14 @@ def chart_builder_app() -> ui.Element:
         can_create_chart = bool(x_col and y_col)
     elif chart_type == "funnel_area":
         can_create_chart = bool(names_col and values_col)
+    elif chart_type in ("scatter_3d", "line_3d"):
+        can_create_chart = bool(x_col and y_col and z_col)
+    elif chart_type in ("scatter_polar", "line_polar"):
+        can_create_chart = bool(r_col and theta_col)
+    elif chart_type in ("scatter_ternary", "line_ternary"):
+        can_create_chart = bool(a_col and b_col and c_col)
+    elif chart_type == "timeline":
+        can_create_chart = bool(x_start_col and x_end_col and y_col)
     
     chart = None
     error_message = None
@@ -1488,6 +2055,168 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ) if chart_type == "funnel" else None,
             
+            # 3D chart controls (scatter_3d, line_3d)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Y",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Z",
+                    selected_key=z_col,
+                    on_selection_change=set_z_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_3d", "line_3d") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Size",
+                    selected_key=size_col,
+                    on_selection_change=set_size_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_3d", "line_3d") else None,
+            
+            # Polar chart controls (scatter_polar, line_polar)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="R",
+                    selected_key=r_col,
+                    on_selection_change=set_r_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Theta",
+                    selected_key=theta_col,
+                    on_selection_change=set_theta_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_polar", "line_polar") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Size",
+                    selected_key=size_col,
+                    on_selection_change=set_size_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_polar", "line_polar") else None,
+            
+            # Ternary chart controls (scatter_ternary, line_ternary)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="A",
+                    selected_key=a_col,
+                    on_selection_change=set_a_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="B",
+                    selected_key=b_col,
+                    on_selection_change=set_b_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="C",
+                    selected_key=c_col,
+                    on_selection_change=set_c_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_ternary", "line_ternary") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Size",
+                    selected_key=size_col,
+                    on_selection_change=set_size_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_ternary", "line_ternary") else None,
+            
+            # Timeline chart controls
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X Start",
+                    selected_key=x_start_col,
+                    on_selection_change=set_x_start_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X End",
+                    selected_key=x_end_col,
+                    on_selection_change=set_x_end_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Y",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "timeline" else None,
+            
             # Group by (for charts that support it - not pie, density_heatmap, OHLC, or hierarchical charts)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
@@ -1514,7 +2243,7 @@ def chart_builder_app() -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area") else None,
+            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area", "scatter_3d", "line_3d", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline") else None,
             
             # Histogram-specific options
             ui.number_field(
@@ -1600,6 +2329,18 @@ def chart_builder_app() -> ui.Element:
         placeholder_msg = "Select X or Y column to preview chart"
     elif chart_type in ("candlestick", "ohlc"):
         placeholder_msg = "Select X and OHLC columns to preview chart"
+    elif chart_type in ("treemap", "sunburst", "icicle"):
+        placeholder_msg = "Select Names, Values, and Parents columns to preview chart"
+    elif chart_type == "funnel_area":
+        placeholder_msg = "Select Names and Values columns to preview chart"
+    elif chart_type in ("scatter_3d", "line_3d"):
+        placeholder_msg = "Select X, Y, and Z columns to preview chart"
+    elif chart_type in ("scatter_polar", "line_polar"):
+        placeholder_msg = "Select R and Theta columns to preview chart"
+    elif chart_type in ("scatter_ternary", "line_ternary"):
+        placeholder_msg = "Select A, B, and C columns to preview chart"
+    elif chart_type == "timeline":
+        placeholder_msg = "Select X Start, X End, and Y columns to preview chart"
     else:
         placeholder_msg = "Select X and Y columns to preview chart"
     
