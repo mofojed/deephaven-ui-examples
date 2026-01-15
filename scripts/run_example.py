@@ -113,12 +113,12 @@ def run_example(
     print(f"  File: {main_file}")
     print()
 
-    # Execute the example using Deephaven's run_script to expose variables in the IDE
+    # Execute the example in Deephaven's main globals so variables are exposed
     with open(main_file, "r") as f:
         code = f.read()
 
-    from deephaven_server.server import run_script
-    run_script(code)
+    import __main__
+    exec(code, __main__.__dict__)
 
     print()
     print(f"Example is running!")

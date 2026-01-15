@@ -42,7 +42,7 @@ def counter() -> ui.Element:
         set_count(0)
 
     return ui.flex(
-        ui.text(f"Counter: {count}", style={"fontSize": "24px"}),
+        ui.text(f"Counter: {count}"),
         ui.flex(
             ui.button("−", on_press=decrement, variant="secondary"),
             ui.button("+", on_press=increment, variant="primary"),
@@ -68,7 +68,7 @@ def hello_world_app() -> ui.Element:
         direction="column",
         align_items="center",
         gap="size-400",
-        padding="size-400",
+        UNSAFE_style={"padding": "var(--dh-size-space-400)"},
     )
 
 

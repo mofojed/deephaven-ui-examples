@@ -152,8 +152,8 @@ def my_custom_component(name: str):
 
 ## Examples
 
-| Example | Description |
-| ------- | ----------- |
+| Example                              | Description                               |
+| ------------------------------------ | ----------------------------------------- |
 | [hello-world](examples/hello-world/) | Basic component and state management demo |
 
 ## Resources
