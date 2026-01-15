@@ -239,6 +239,52 @@ def _make_scatter(table: Table, config: ChartConfig):
         kwargs["color"] = config["color"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Text and hover options
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    # Scatter-specific options
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("marginal_x"):
+        kwargs["marginal_x"] = config["marginal_x"]
+    if config.get("marginal_y"):
+        kwargs["marginal_y"] = config["marginal_y"]
+    # Error bars
+    if config.get("error_x"):
+        kwargs["error_x"] = config["error_x"]
+    if config.get("error_x_minus"):
+        kwargs["error_x_minus"] = config["error_x_minus"]
+    if config.get("error_y"):
+        kwargs["error_y"] = config["error_y"]
+    if config.get("error_y_minus"):
+        kwargs["error_y_minus"] = config["error_y_minus"]
+    # Axis configuration
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("range_x"):
+        kwargs["range_x"] = config["range_x"]
+    if config.get("range_y"):
+        kwargs["range_y"] = config["range_y"]
+    if config.get("xaxis_titles"):
+        # dx.scatter expects list[str] for xaxis_titles
+        val = config["xaxis_titles"]
+        kwargs["xaxis_titles"] = [val] if isinstance(val, str) else val
+    if config.get("yaxis_titles"):
+        # dx.scatter expects list[str] for yaxis_titles
+        val = config["yaxis_titles"]
+        kwargs["yaxis_titles"] = [val] if isinstance(val, str) else val
+    # Labels dict
+    if config.get("labels"):
+        kwargs["labels"] = config["labels"]
+    # Rendering options
+    if config.get("render_mode"):
+        kwargs["render_mode"] = config["render_mode"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.scatter(table, **kwargs)
 
 
@@ -253,6 +299,54 @@ def _make_line(table: Table, config: ChartConfig):
         kwargs["markers"] = config["markers"]
     if config.get("line_shape"):
         kwargs["line_shape"] = config["line_shape"]
+    # Text and hover options
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    # Line-specific options
+    if config.get("line_dash"):
+        kwargs["line_dash"] = config["line_dash"]
+    if config.get("width"):
+        kwargs["width"] = config["width"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("symbol"):
+        kwargs["symbol"] = config["symbol"]
+    # Error bars
+    if config.get("error_x"):
+        kwargs["error_x"] = config["error_x"]
+    if config.get("error_x_minus"):
+        kwargs["error_x_minus"] = config["error_x_minus"]
+    if config.get("error_y"):
+        kwargs["error_y"] = config["error_y"]
+    if config.get("error_y_minus"):
+        kwargs["error_y_minus"] = config["error_y_minus"]
+    # Axis configuration
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("range_x"):
+        kwargs["range_x"] = config["range_x"]
+    if config.get("range_y"):
+        kwargs["range_y"] = config["range_y"]
+    if config.get("xaxis_titles"):
+        # dx.line expects list[str] for xaxis_titles
+        val = config["xaxis_titles"]
+        kwargs["xaxis_titles"] = [val] if isinstance(val, str) else val
+    if config.get("yaxis_titles"):
+        # dx.line expects list[str] for yaxis_titles
+        val = config["yaxis_titles"]
+        kwargs["yaxis_titles"] = [val] if isinstance(val, str) else val
+    # Labels dict
+    if config.get("labels"):
+        kwargs["labels"] = config["labels"]
+    # Rendering options
+    if config.get("render_mode"):
+        kwargs["render_mode"] = config["render_mode"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.line(table, **kwargs)
 
 
@@ -865,12 +959,70 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
     if config.get("symbol"):
         params.append(f'symbol="{config["symbol"]}"')
     
+    # Text and hover options (scatter/line)
+    if chart_type in ("scatter", "line"):
+        if config.get("text"):
+            params.append(f'text="{config["text"]}"')
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+    
     # Line-specific options
     if chart_type == "line":
         if config.get("markers"):
             params.append("markers=True")
         if config.get("line_shape") and config["line_shape"] != "linear":
             params.append(f'line_shape="{config["line_shape"]}"')
+        if config.get("line_dash"):
+            params.append(f'line_dash="{config["line_dash"]}"')
+        if config.get("width"):
+            params.append(f'width="{config["width"]}"')
+    
+    # Scatter-specific options
+    if chart_type == "scatter":
+        if config.get("opacity") is not None and config["opacity"] != 1.0:
+            params.append(f'opacity={config["opacity"]}')
+        if config.get("marginal_x"):
+            params.append(f'marginal_x="{config["marginal_x"]}"')
+        if config.get("marginal_y"):
+            params.append(f'marginal_y="{config["marginal_y"]}"')
+    
+    # Error bars (scatter/line)
+    if chart_type in ("scatter", "line"):
+        if config.get("error_x"):
+            params.append(f'error_x="{config["error_x"]}"')
+        if config.get("error_x_minus"):
+            params.append(f'error_x_minus="{config["error_x_minus"]}"')
+        if config.get("error_y"):
+            params.append(f'error_y="{config["error_y"]}"')
+        if config.get("error_y_minus"):
+            params.append(f'error_y_minus="{config["error_y_minus"]}"')
+    
+    # Axis configuration (scatter/line)
+    if chart_type in ("scatter", "line"):
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        if config.get("range_x"):
+            params.append(f'range_x={_format_value(config["range_x"])}')
+        if config.get("range_y"):
+            params.append(f'range_y={_format_value(config["range_y"])}')
+        if config.get("xaxis_titles"):
+            params.append(f'xaxis_titles={_format_value(config["xaxis_titles"])}')
+        if config.get("yaxis_titles"):
+            params.append(f'yaxis_titles={_format_value(config["yaxis_titles"])}')
+    
+    # Labels dict (scatter/line)
+    if chart_type in ("scatter", "line"):
+        if config.get("labels"):
+            params.append(f'labels={_format_value(config["labels"])}')
+    
+    # Rendering options (scatter/line)
+    if chart_type in ("scatter", "line"):
+        if config.get("render_mode") and config["render_mode"] != "webgl":
+            params.append(f'render_mode="{config["render_mode"]}"')
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
     
     # Bar-specific options
     if chart_type == "bar":
@@ -2386,6 +2538,45 @@ def chart_builder_app() -> ui.Element:
     center_lon, set_center_lon = ui.use_state(0.0)
     map_style, set_map_style = ui.use_state("")
     
+    # Advanced options state (Phase 9)
+    # Text and hover options
+    text_col, set_text_col = ui.use_state("")
+    hover_name_col, set_hover_name_col = ui.use_state("")
+    
+    # Error bars
+    error_x_col, set_error_x_col = ui.use_state("")
+    error_x_minus_col, set_error_x_minus_col = ui.use_state("")
+    error_y_col, set_error_y_col = ui.use_state("")
+    error_y_minus_col, set_error_y_minus_col = ui.use_state("")
+    
+    # Marginal plots (scatter only)
+    marginal_x, set_marginal_x = ui.use_state("")
+    marginal_y, set_marginal_y = ui.use_state("")
+    
+    # Axis configuration
+    log_x, set_log_x = ui.use_state(False)
+    log_y, set_log_y = ui.use_state(False)
+    range_x_min, set_range_x_min = ui.use_state(None)
+    range_x_max, set_range_x_max = ui.use_state(None)
+    range_y_min, set_range_y_min = ui.use_state(None)
+    range_y_max, set_range_y_max = ui.use_state(None)
+    xaxis_title, set_xaxis_title = ui.use_state("")
+    yaxis_title, set_yaxis_title = ui.use_state("")
+    
+    # Opacity (scatter)
+    opacity, set_opacity = ui.use_state(1.0)
+    
+    # Line-specific advanced options
+    line_dash_col, set_line_dash_col = ui.use_state("")
+    width_col, set_width_col = ui.use_state("")
+    
+    # Rendering options
+    render_mode, set_render_mode = ui.use_state("webgl")
+    template, set_template = ui.use_state("")
+    
+    # Advanced section expanded state
+    advanced_expanded, set_advanced_expanded = ui.use_state(False)
+    
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
         """Update a group by column at a specific index."""
@@ -2473,10 +2664,90 @@ def chart_builder_app() -> ui.Element:
             config["symbol"] = symbol_col
         if color_col:
             config["color"] = color_col
+        # Advanced scatter options
+        if text_col:
+            config["text"] = text_col
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        if marginal_x:
+            config["marginal_x"] = marginal_x
+        if marginal_y:
+            config["marginal_y"] = marginal_y
+        # Error bars
+        if error_x_col:
+            config["error_x"] = error_x_col
+        if error_x_minus_col:
+            config["error_x_minus"] = error_x_minus_col
+        if error_y_col:
+            config["error_y"] = error_y_col
+        if error_y_minus_col:
+            config["error_y_minus"] = error_y_minus_col
+        # Axis configuration
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if range_x_min is not None and range_x_max is not None:
+            config["range_x"] = [range_x_min, range_x_max]
+        if range_y_min is not None and range_y_max is not None:
+            config["range_y"] = [range_y_min, range_y_max]
+        if xaxis_title:
+            config["xaxis_titles"] = xaxis_title
+        if yaxis_title:
+            config["yaxis_titles"] = yaxis_title
+        # Rendering
+        if render_mode and render_mode != "webgl":
+            config["render_mode"] = render_mode
+        if template:
+            config["template"] = template
     elif chart_type == "line":
         config["markers"] = markers
         if line_shape:
             config["line_shape"] = line_shape
+        if color_col:
+            config["color"] = color_col
+        if size_col:
+            config["size"] = size_col
+        if symbol_col:
+            config["symbol"] = symbol_col
+        # Advanced line options
+        if text_col:
+            config["text"] = text_col
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if line_dash_col:
+            config["line_dash"] = line_dash_col
+        if width_col:
+            config["width"] = width_col
+        # Error bars
+        if error_x_col:
+            config["error_x"] = error_x_col
+        if error_x_minus_col:
+            config["error_x_minus"] = error_x_minus_col
+        if error_y_col:
+            config["error_y"] = error_y_col
+        if error_y_minus_col:
+            config["error_y_minus"] = error_y_minus_col
+        # Axis configuration
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if range_x_min is not None and range_x_max is not None:
+            config["range_x"] = [range_x_min, range_x_max]
+        if range_y_min is not None and range_y_max is not None:
+            config["range_y"] = [range_y_min, range_y_max]
+        if xaxis_title:
+            config["xaxis_titles"] = xaxis_title
+        if yaxis_title:
+            config["yaxis_titles"] = yaxis_title
+        # Rendering
+        if render_mode and render_mode != "webgl":
+            config["render_mode"] = render_mode
+        if template:
+            config["template"] = template
     elif chart_type == "bar":
         config["orientation"] = orientation
     elif chart_type == "pie":
@@ -3323,6 +3594,203 @@ def chart_builder_app() -> ui.Element:
                 on_selection_change=set_orientation,
                 width="100%",
             ) if chart_type == "bar" else None,
+            
+            # Advanced Options (collapsible) - only for scatter and line
+            ui.disclosure(
+                title="Advanced Options",
+                panel=ui.flex(
+                    # Text and Hover options
+                    ui.flex(
+                        ui.picker(
+                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                            label="Text Labels",
+                            selected_key=text_col,
+                            on_selection_change=set_text_col,
+                            flex_grow=1,
+                        ),
+                        ui.picker(
+                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                            label="Hover Name",
+                            selected_key=hover_name_col,
+                            on_selection_change=set_hover_name_col,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ),
+                    
+                    # Opacity (scatter only)
+                    ui.slider(
+                        label="Opacity",
+                        value=opacity,
+                        on_change=set_opacity,
+                        min_value=0.0,
+                        max_value=1.0,
+                        step=0.1,
+                        width="100%",
+                    ) if chart_type == "scatter" else None,
+                    
+                    # Line-specific: line_dash and width columns
+                    ui.flex(
+                        ui.picker(
+                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                            label="Line Dash",
+                            selected_key=line_dash_col,
+                            on_selection_change=set_line_dash_col,
+                            flex_grow=1,
+                        ),
+                        ui.picker(
+                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                            label="Line Width",
+                            selected_key=width_col,
+                            on_selection_change=set_width_col,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ) if chart_type == "line" else None,
+                    
+                    # Marginal plots (scatter only)
+                    ui.flex(
+                        ui.picker(
+                            ui.item("(None)", key=""),
+                            ui.item("Histogram", key="histogram"),
+                            ui.item("Box", key="box"),
+                            ui.item("Violin", key="violin"),
+                            ui.item("Rug", key="rug"),
+                            label="Marginal X",
+                            selected_key=marginal_x,
+                            on_selection_change=set_marginal_x,
+                            flex_grow=1,
+                        ),
+                        ui.picker(
+                            ui.item("(None)", key=""),
+                            ui.item("Histogram", key="histogram"),
+                            ui.item("Box", key="box"),
+                            ui.item("Violin", key="violin"),
+                            ui.item("Rug", key="rug"),
+                            label="Marginal Y",
+                            selected_key=marginal_y,
+                            on_selection_change=set_marginal_y,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ) if chart_type == "scatter" else None,
+                    
+                    # Error bars
+                    ui.text("Error Bars", UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"}),
+                    ui.flex(
+                        ui.picker(
+                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                            label="Error X",
+                            selected_key=error_x_col,
+                            on_selection_change=set_error_x_col,
+                            flex_grow=1,
+                        ),
+                        ui.picker(
+                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                            label="Error X-",
+                            selected_key=error_x_minus_col,
+                            on_selection_change=set_error_x_minus_col,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ),
+                    ui.flex(
+                        ui.picker(
+                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                            label="Error Y",
+                            selected_key=error_y_col,
+                            on_selection_change=set_error_y_col,
+                            flex_grow=1,
+                        ),
+                        ui.picker(
+                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                            label="Error Y-",
+                            selected_key=error_y_minus_col,
+                            on_selection_change=set_error_y_minus_col,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ),
+                    
+                    # Axis configuration
+                    ui.text("Axis Configuration", UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"}),
+                    ui.flex(
+                        ui.checkbox(
+                            "Log X",
+                            is_selected=log_x,
+                            on_change=set_log_x,
+                        ),
+                        ui.checkbox(
+                            "Log Y",
+                            is_selected=log_y,
+                            on_change=set_log_y,
+                        ),
+                        direction="row",
+                        gap="size-200",
+                    ),
+                    ui.flex(
+                        ui.text_field(
+                            label="X Axis Title",
+                            value=xaxis_title,
+                            on_change=set_xaxis_title,
+                            flex_grow=1,
+                        ),
+                        ui.text_field(
+                            label="Y Axis Title",
+                            value=yaxis_title,
+                            on_change=set_yaxis_title,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ),
+                    
+                    # Rendering options
+                    ui.text("Rendering", UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"}),
+                    ui.flex(
+                        ui.picker(
+                            ui.item("WebGL (faster)", key="webgl"),
+                            ui.item("SVG (more compatible)", key="svg"),
+                            label="Render Mode",
+                            selected_key=render_mode,
+                            on_selection_change=set_render_mode,
+                            flex_grow=1,
+                        ),
+                        ui.picker(
+                            ui.item("(Default)", key=""),
+                            ui.item("plotly", key="plotly"),
+                            ui.item("plotly_white", key="plotly_white"),
+                            ui.item("plotly_dark", key="plotly_dark"),
+                            ui.item("ggplot2", key="ggplot2"),
+                            ui.item("seaborn", key="seaborn"),
+                            ui.item("simple_white", key="simple_white"),
+                            label="Template",
+                            selected_key=template,
+                            on_selection_change=set_template,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ),
+                    
+                    direction="column",
+                    gap="size-100",
+                ),
+                is_expanded=advanced_expanded,
+                on_expanded_change=lambda: set_advanced_expanded(not advanced_expanded),
+            ) if chart_type in ("scatter", "line") else None,
             
             # Title
             ui.text_field(

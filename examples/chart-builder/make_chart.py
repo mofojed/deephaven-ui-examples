@@ -111,7 +111,7 @@ def _make_scatter(table: Table, config: ChartConfig):
         "y": config["y"],
     }
     
-    # Optional parameters
+    # Basic optional parameters
     if config.get("by"):
         kwargs["by"] = config["by"]
     if config.get("size"):
@@ -124,10 +124,59 @@ def _make_scatter(table: Table, config: ChartConfig):
         kwargs["title"] = config["title"]
     if config.get("opacity") is not None:
         kwargs["opacity"] = config["opacity"]
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    
+    # Axis options
     if config.get("log_x"):
         kwargs["log_x"] = config["log_x"]
     if config.get("log_y"):
         kwargs["log_y"] = config["log_y"]
+    
+    # Error bars
+    if config.get("error_x"):
+        kwargs["error_x"] = config["error_x"]
+    if config.get("error_x_minus"):
+        kwargs["error_x_minus"] = config["error_x_minus"]
+    if config.get("error_y"):
+        kwargs["error_y"] = config["error_y"]
+    if config.get("error_y_minus"):
+        kwargs["error_y_minus"] = config["error_y_minus"]
+    
+    # Marginal plots
+    if config.get("marginal_x"):
+        kwargs["marginal_x"] = config["marginal_x"]
+    if config.get("marginal_y"):
+        kwargs["marginal_y"] = config["marginal_y"]
+    
+    # Axis configuration
+    if config.get("range_x"):
+        kwargs["range_x"] = config["range_x"]
+    if config.get("range_y"):
+        kwargs["range_y"] = config["range_y"]
+    if config.get("xaxis_titles"):
+        # Convert to list if string (dx.scatter expects list)
+        val = config["xaxis_titles"]
+        kwargs["xaxis_titles"] = [val] if isinstance(val, str) else val
+    if config.get("yaxis_titles"):
+        val = config["yaxis_titles"]
+        kwargs["yaxis_titles"] = [val] if isinstance(val, str) else val
+    
+    # Labels
+    if config.get("labels"):
+        kwargs["labels"] = config["labels"]
+    
+    # Rendering options
+    if config.get("render_mode"):
+        kwargs["render_mode"] = config["render_mode"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
+    
+    # Debug: print kwargs to server log
+    if config.get("xaxis_titles") or config.get("yaxis_titles"):
+        print(f"[make_chart DEBUG] _make_scatter kwargs: {kwargs}", flush=True)
     
     return dx.scatter(table, **kwargs)
 
@@ -147,7 +196,7 @@ def _make_line(table: Table, config: ChartConfig):
         "y": config["y"],
     }
     
-    # Optional parameters
+    # Basic optional parameters
     if config.get("by"):
         kwargs["by"] = config["by"]
     if config.get("title"):
@@ -156,10 +205,59 @@ def _make_line(table: Table, config: ChartConfig):
         kwargs["markers"] = config["markers"]
     if config.get("line_shape"):
         kwargs["line_shape"] = config["line_shape"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("line_dash"):
+        kwargs["line_dash"] = config["line_dash"]
+    if config.get("width"):
+        kwargs["width"] = config["width"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("symbol"):
+        kwargs["symbol"] = config["symbol"]
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    
+    # Axis options
     if config.get("log_x"):
         kwargs["log_x"] = config["log_x"]
     if config.get("log_y"):
         kwargs["log_y"] = config["log_y"]
+    
+    # Error bars
+    if config.get("error_x"):
+        kwargs["error_x"] = config["error_x"]
+    if config.get("error_x_minus"):
+        kwargs["error_x_minus"] = config["error_x_minus"]
+    if config.get("error_y"):
+        kwargs["error_y"] = config["error_y"]
+    if config.get("error_y_minus"):
+        kwargs["error_y_minus"] = config["error_y_minus"]
+    
+    # Axis configuration
+    if config.get("range_x"):
+        kwargs["range_x"] = config["range_x"]
+    if config.get("range_y"):
+        kwargs["range_y"] = config["range_y"]
+    if config.get("xaxis_titles"):
+        # Convert to list if string (dx.line expects list)
+        val = config["xaxis_titles"]
+        kwargs["xaxis_titles"] = [val] if isinstance(val, str) else val
+    if config.get("yaxis_titles"):
+        val = config["yaxis_titles"]
+        kwargs["yaxis_titles"] = [val] if isinstance(val, str) else val
+    
+    # Labels
+    if config.get("labels"):
+        kwargs["labels"] = config["labels"]
+    
+    # Rendering options
+    if config.get("render_mode"):
+        kwargs["render_mode"] = config["render_mode"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     
     return dx.line(table, **kwargs)
 
