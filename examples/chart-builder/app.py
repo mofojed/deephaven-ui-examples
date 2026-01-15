@@ -31,7 +31,7 @@ class ChartConfig(TypedDict):
     chart_type: ChartType
     x: NotRequired[str]
     y: NotRequired[str]
-    by: NotRequired[str]
+    by: NotRequired[str | list[str]]  # Single column or list of columns
     title: NotRequired[str]
     # Scatter options
     size: NotRequired[str]
@@ -235,7 +235,7 @@ def chart_builder(table: Table) -> ui.Element:
     chart_type, set_chart_type = ui.use_state("scatter")
     x_col, set_x_col = ui.use_state("")
     y_col, set_y_col = ui.use_state("")
-    by_col, set_by_col = ui.use_state("")
+    by_cols, set_by_cols = ui.use_state([])  # List of group by columns
     title, set_title = ui.use_state("")
     
     # Scatter-specific state
@@ -254,10 +254,36 @@ def chart_builder(table: Table) -> ui.Element:
     names_col, set_names_col = ui.use_state("")
     values_col, set_values_col = ui.use_state("")
     
+    # Handlers for multi-select group by
+    def update_by_col(index: int, col: str):
+        """Update a group by column at a specific index."""
+        if col == "":
+            # Selected (None) - remove this and all subsequent columns
+            set_by_cols(by_cols[:index])
+        elif index < len(by_cols):
+            # Update existing column
+            new_cols = by_cols.copy()
+            new_cols[index] = col
+            set_by_cols(new_cols)
+        else:
+            # Add new column
+            set_by_cols([*by_cols, col])
+    
+    def remove_by_col(index: int):
+        """Remove a group by column at a specific index."""
+        set_by_cols(by_cols[:index] + by_cols[index + 1:])
+    
     # Get column names from table
     columns = _get_column_names(table)
     column_items = _column_picker_items(columns, include_none=False)
     optional_column_items = _column_picker_items(columns, include_none=True)
+    
+    # Available columns for group by at each position (exclude already selected except current)
+    def get_by_picker_items(index: int) -> list[dict]:
+        """Get picker items for a group by dropdown, excluding already selected columns."""
+        selected_at_other_indices = [c for i, c in enumerate(by_cols) if i != index]
+        available = [c for c in columns if c not in selected_at_other_indices]
+        return _column_picker_items(available, include_none=True)
     
     # Build configuration from state
     config: ChartConfig = {"chart_type": chart_type}
@@ -268,8 +294,9 @@ def chart_builder(table: Table) -> ui.Element:
             config["x"] = x_col
         if y_col:
             config["y"] = y_col
-        if by_col:
-            config["by"] = by_col
+        if by_cols:
+            # Pass single string if one column, list if multiple
+            config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
     
     # Pie chart uses names/values
     if chart_type == "pie":
@@ -373,12 +400,31 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ) if chart_type == "pie" else None,
             
-            # Group by (not for pie)
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Group By",
-                selected_key=by_col,
-                on_selection_change=set_by_col,
+            # Group by (not for pie) - cascading dropdowns
+            ui.flex(
+                # Show dropdowns for each selected column plus one empty one
+                *[ui.flex(
+                    ui.picker(
+                        *[ui.item(item["label"], key=item["key"]) for item in get_by_picker_items(i)],
+                        label="Group By" if i == 0 else f"Group {i + 1}",
+                        selected_key=by_cols[i] if i < len(by_cols) else "",
+                        on_selection_change=lambda col, idx=i: update_by_col(idx, col),
+                        flex_grow=1,
+                    ),
+                    # Trash button to remove (only show for selected columns, not the empty "add" picker)
+                    ui.action_button(
+                        ui.icon("vsTrash"),
+                        on_press=(lambda idx: lambda: remove_by_col(idx))(i),
+                        is_quiet=True,
+                        aria_label=f"Remove group {i + 1}",
+                    ) if i < len(by_cols) else None,
+                    direction="row",
+                    gap="size-100",
+                    align_items="end",
+                    width="100%",
+                ) for i in range(len(by_cols) + 1)],  # +1 for the "add new" picker
+                direction="column",
+                gap="size-100",
                 width="100%",
             ) if chart_type != "pie" else None,
             
@@ -491,7 +537,7 @@ def chart_builder_app() -> ui.Element:
     chart_type, set_chart_type = ui.use_state("scatter")
     x_col, set_x_col = ui.use_state("")
     y_col, set_y_col = ui.use_state("")
-    by_col, set_by_col = ui.use_state("")
+    by_cols, set_by_cols = ui.use_state([])  # List of group by columns
     title, set_title = ui.use_state("")
     
     # Scatter-specific state
@@ -510,13 +556,32 @@ def chart_builder_app() -> ui.Element:
     names_col, set_names_col = ui.use_state("")
     values_col, set_values_col = ui.use_state("")
     
+    # Handlers for multi-select group by
+    def update_by_col(index: int, col: str):
+        """Update a group by column at a specific index."""
+        if col == "":
+            # Selected (None) - remove this and all subsequent columns
+            set_by_cols(by_cols[:index])
+        elif index < len(by_cols):
+            # Update existing column
+            new_cols = by_cols.copy()
+            new_cols[index] = col
+            set_by_cols(new_cols)
+        else:
+            # Add new column
+            set_by_cols([*by_cols, col])
+    
+    def remove_by_col(index: int):
+        """Remove a group by column at a specific index."""
+        set_by_cols(by_cols[:index] + by_cols[index + 1:])
+    
     # Handler to change dataset and reset column selections
     def handle_dataset_change(new_dataset: str):
         set_dataset_name(new_dataset)
         # Reset all column selections when dataset changes
         set_x_col("")
         set_y_col("")
-        set_by_col("")
+        set_by_cols([])
         set_size_col("")
         set_symbol_col("")
         set_color_col("")
@@ -528,6 +593,13 @@ def chart_builder_app() -> ui.Element:
     column_items = _column_picker_items(columns, include_none=False)
     optional_column_items = _column_picker_items(columns, include_none=True)
     
+    # Available columns for group by at each position (exclude already selected except current)
+    def get_by_picker_items(index: int) -> list[dict]:
+        """Get picker items for a group by dropdown, excluding already selected columns."""
+        selected_at_other_indices = [c for i, c in enumerate(by_cols) if i != index]
+        available = [c for c in columns if c not in selected_at_other_indices]
+        return _column_picker_items(available, include_none=True)
+    
     # Build configuration from state
     config: ChartConfig = {"chart_type": chart_type}
     
@@ -535,8 +607,9 @@ def chart_builder_app() -> ui.Element:
         config["x"] = x_col
     if y_col:
         config["y"] = y_col
-    if by_col:
-        config["by"] = by_col
+    if by_cols:
+        # Pass single string if one column, list if multiple
+        config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
     if title:
         config["title"] = title
     
@@ -646,12 +719,31 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ) if chart_type == "pie" else None,
             
-            # Group by (not for pie charts)
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Group By",
-                selected_key=by_col,
-                on_selection_change=set_by_col,
+            # Group by (not for pie charts) - cascading dropdowns
+            ui.flex(
+                # Show dropdowns for each selected column plus one empty one
+                *[ui.flex(
+                    ui.picker(
+                        *[ui.item(item["label"], key=item["key"]) for item in get_by_picker_items(i)],
+                        label="Group By" if i == 0 else f"Group {i + 1}",
+                        selected_key=by_cols[i] if i < len(by_cols) else "",
+                        on_selection_change=lambda col, idx=i: update_by_col(idx, col),
+                        flex_grow=1,
+                    ),
+                    # Trash button to remove (only show for selected columns, not the empty "add" picker)
+                    ui.action_button(
+                        ui.icon("vsTrash"),
+                        on_press=(lambda idx: lambda: remove_by_col(idx))(i),
+                        is_quiet=True,
+                        aria_label=f"Remove group {i + 1}",
+                    ) if i < len(by_cols) else None,
+                    direction="row",
+                    gap="size-100",
+                    align_items="end",
+                    width="100%",
+                ) for i in range(len(by_cols) + 1)],  # +1 for the "add new" picker
+                direction="column",
+                gap="size-100",
                 width="100%",
             ) if chart_type != "pie" else None,
             

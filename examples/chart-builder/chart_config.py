@@ -27,8 +27,8 @@ class ChartConfig(TypedDict):
     x: NotRequired[str]
     y: NotRequired[str]
     
-    # Grouping
-    by: NotRequired[str]
+    # Grouping - single column or list of columns
+    by: NotRequired[str | list[str]]
     
     # Title
     title: NotRequired[str]
