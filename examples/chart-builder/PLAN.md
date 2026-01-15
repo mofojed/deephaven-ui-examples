@@ -209,6 +209,225 @@ Display a copyable Python code block below the chart that shows the exact code n
    - Map center dict needs proper formatting `{"lat": 44.97, "lon": -93.17}`
    - Show code even when configuration is incomplete (helps user understand what's needed)
 
+### Phase 9: Advanced Parameters - Scatter/Line Charts
+
+Expose ALL available parameters for scatter and line chart types with commonly-used options in the main UI and advanced/obscure options in a collapsible "Advanced" section.
+
+#### Goals
+
+- Provide complete control over every parameter supported by `dx.scatter()` and `dx.line()`
+- Maintain a clean UI by hiding advanced options in a collapsible section
+- Serve as a template for adding advanced parameters to other chart types in future phases
+
+#### Scatter Chart Parameters (dx.scatter)
+
+**Currently Implemented (Basic)**:
+- `x`, `y` - Axis columns
+- `by` - Grouping column
+- `size` - Size column
+- `symbol` - Symbol column
+- `color` - Color column
+- `title` - Chart title
+- `opacity` - Marker opacity
+- `log_x`, `log_y` - Log scale axes
+
+**New Basic Parameters**:
+- `text` - Text labels column
+- `hover_name` - Hover tooltip name column
+
+**New Advanced Parameters** (in collapsible section):
+- Error bars:
+  - `error_x` - X error bar column
+  - `error_x_minus` - X error bar minus column
+  - `error_y` - Y error bar column
+  - `error_y_minus` - Y error bar minus column
+- Design mappings:
+  - `color_discrete_sequence` - Custom color palette
+  - `color_discrete_map` - Map specific values to colors
+  - `symbol_sequence` - Custom symbol sequence
+  - `symbol_map` - Map specific values to symbols
+  - `size_sequence` - Custom size sequence
+  - `size_map` - Map specific values to sizes
+- Continuous color options:
+  - `color_continuous_scale` - Color scale for continuous color
+  - `range_color` - Fixed color range [min, max]
+  - `color_continuous_midpoint` - Midpoint for diverging scales
+- Axis configuration:
+  - `xaxis_sequence` - Assign series to multiple x axes
+  - `yaxis_sequence` - Assign series to multiple y axes
+  - `range_x` - Fixed x-axis range
+  - `range_y` - Fixed y-axis range
+  - `xaxis_titles` - X axis titles
+  - `yaxis_titles` - Y axis titles
+- Marginal plots:
+  - `marginal_x` - Marginal plot type for x axis (histogram, box, violin, rug)
+  - `marginal_y` - Marginal plot type for y axis
+- Labels:
+  - `labels` - Dict to rename columns in legends/tooltips
+- Rendering:
+  - `template` - Plotly template name
+  - `render_mode` - "webgl" or "svg"
+  - `calendar` - Business calendar for time axes
+
+#### Line Chart Parameters (dx.line)
+
+**Currently Implemented (Basic)**:
+- `x`, `y` - Axis columns
+- `by` - Grouping column
+- `markers` - Show markers on line
+- `line_shape` - Line interpolation shape
+- `title` - Chart title
+- `log_x`, `log_y` - Log scale axes
+
+**New Basic Parameters**:
+- `size` - Line marker size column
+- `line_dash` - Line dash pattern column
+- `width` - Line width column
+- `color` - Line color column
+- `symbol` - Marker symbol column
+- `text` - Text labels column
+- `hover_name` - Hover tooltip name column
+
+**New Advanced Parameters** (in collapsible section):
+- Error bars:
+  - `error_x` - X error bar column
+  - `error_x_minus` - X error bar minus column
+  - `error_y` - Y error bar column
+  - `error_y_minus` - Y error bar minus column
+- Design mappings:
+  - `color_discrete_sequence` - Custom color palette
+  - `color_discrete_map` - Map specific values to colors
+  - `line_dash_sequence` - Custom dash pattern sequence
+  - `line_dash_map` - Map specific values to dash patterns
+  - `symbol_sequence` - Custom symbol sequence
+  - `symbol_map` - Map specific values to symbols
+  - `size_sequence` - Custom size sequence
+  - `size_map` - Map specific values to sizes
+  - `width_sequence` - Custom width sequence
+  - `width_map` - Map specific values to widths
+- Axis configuration:
+  - `xaxis_sequence` - Assign series to multiple x axes
+  - `yaxis_sequence` - Assign series to multiple y axes
+  - `range_x` - Fixed x-axis range
+  - `range_y` - Fixed y-axis range
+  - `xaxis_titles` - X axis titles
+  - `yaxis_titles` - Y axis titles
+- Labels:
+  - `labels` - Dict to rename columns in legends/tooltips
+- Rendering:
+  - `template` - Plotly template name
+  - `render_mode` - "webgl" or "svg"
+  - `calendar` - Business calendar for time axes
+
+#### ChartConfig Additions
+
+```python
+class ChartConfig(TypedDict):
+    # ... existing fields ...
+    
+    # Text and hover
+    text: NotRequired[str]
+    hover_name: NotRequired[str]
+    
+    # Error bars
+    error_x: NotRequired[str]
+    error_x_minus: NotRequired[str]
+    error_y: NotRequired[str]
+    error_y_minus: NotRequired[str]
+    
+    # Design mappings (string-based for simplicity)
+    color_discrete_sequence: NotRequired[list[str]]
+    symbol_sequence: NotRequired[list[str]]
+    size_sequence: NotRequired[list[int]]
+    line_dash_sequence: NotRequired[list[str]]  # line only
+    width_sequence: NotRequired[list[int]]  # line only
+    
+    # Continuous color
+    color_continuous_scale: NotRequired[list[str]]
+    range_color: NotRequired[list[float]]
+    color_continuous_midpoint: NotRequired[float]
+    
+    # Axis ranges
+    range_x: NotRequired[list[int | float]]
+    range_y: NotRequired[list[int | float]]
+    xaxis_titles: NotRequired[list[str] | str]
+    yaxis_titles: NotRequired[list[str] | str]
+    
+    # Marginal plots (scatter only)
+    marginal_x: NotRequired[Literal["histogram", "box", "violin", "rug"]]
+    marginal_y: NotRequired[Literal["histogram", "box", "violin", "rug"]]
+    
+    # Line-specific
+    line_dash: NotRequired[str]  # column name
+    width: NotRequired[str]  # column name
+    
+    # Labels dict (for renaming in tooltips/legends)
+    labels: NotRequired[dict[str, str]]
+    
+    # Rendering
+    template: NotRequired[str]
+    render_mode: NotRequired[Literal["webgl", "svg"]]
+```
+
+#### UI Design
+
+The UI will be organized into sections:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Dataset ▼]  [Chart Type: Scatter ▼]                       │
+├─────────────────────────────────────────────────────────────┤
+│  Data Mapping                                                │
+│  [X Column ▼]  [Y Column ▼]  [Group By ▼]                   │
+├─────────────────────────────────────────────────────────────┤
+│  Appearance                                                  │
+│  [Size ▼]  [Symbol ▼]  [Color ▼]  [Text ▼]                 │
+│  [Opacity: ____]  [Hover Name ▼]                            │
+├─────────────────────────────────────────────────────────────┤
+│  ▶ Advanced Options (click to expand)                       │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ Error Bars                                             │  │
+│  │ [Error X ▼] [Error X- ▼] [Error Y ▼] [Error Y- ▼]    │  │
+│  │                                                        │  │
+│  │ Axis Configuration                                     │  │
+│  │ [Log X ☐] [Log Y ☐]                                   │  │
+│  │ Range X: [min] to [max]                               │  │
+│  │ Range Y: [min] to [max]                               │  │
+│  │ X Axis Title: [____]  Y Axis Title: [____]            │  │
+│  │                                                        │  │
+│  │ Marginal Plots                                         │  │
+│  │ [Marginal X ▼]  [Marginal Y ▼]                        │  │
+│  │                                                        │  │
+│  │ Rendering                                              │  │
+│  │ [Render Mode ▼]  [Template ▼]                         │  │
+│  └───────────────────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────┤
+│                    [CHART VISUALIZATION]                     │
+├─────────────────────────────────────────────────────────────┤
+│  📋 Generated Code                              [Copy]       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Implementation Steps
+
+1. **Update ChartConfig** - Add all new fields to the TypedDict
+2. **Update make_chart** - Pass all new parameters to dx.scatter/dx.line
+3. **Update generate_chart_code** - Include new parameters in generated code
+4. **Create Advanced Section UI** - Build collapsible panel with grouped options
+5. **Add State Variables** - Add useState for each new parameter
+6. **Wire Up Controls** - Connect UI controls to state and config
+7. **Unit Tests** - Test make_chart with advanced parameters
+8. **Update README** - Document new advanced options
+
+#### Future Phases (Planned)
+
+- **Phase 10**: Advanced Parameters - Bar/Area/Pie Charts
+- **Phase 11**: Advanced Parameters - Distribution Charts (histogram, box, violin, strip)
+- **Phase 12**: Advanced Parameters - Financial Charts (candlestick, ohlc)
+- **Phase 13**: Advanced Parameters - Hierarchical Charts (treemap, sunburst, funnel)
+- **Phase 14**: Advanced Parameters - 3D/Polar/Ternary Charts
+- **Phase 15**: Advanced Parameters - Map/Geo Charts
+
 #### UI Layout Update
 
 ```
