@@ -110,8 +110,8 @@ def make_chart(table: Table, config: ChartConfig):
 # =============================================================================
 
 CHART_TYPES = [
-    {"key": "scatter", "label": "Scatter"},
-    {"key": "line", "label": "Line"},
+    {"key": "scatter", "label": "Scatter", "icon": "vsCircleFilled"},
+    {"key": "line", "label": "Line", "icon": "vsGraphLine"},
 ]
 
 LINE_SHAPES = [
@@ -203,99 +203,132 @@ def chart_builder(table: Table) -> ui.Element:
         except Exception as e:
             error_message = str(e)
     
-    # Build the UI
+    # Controls panel - compact sidebar
+    controls = ui.view(
+        ui.flex(
+            # Chart type with icons
+            ui.picker(
+                *[ui.item(
+                    ui.icon(ct["icon"]),
+                    ct["label"],
+                    key=ct["key"],
+                    text_value=ct["label"],
+                ) for ct in CHART_TYPES],
+                label="Chart Type",
+                selected_key=chart_type,
+                on_selection_change=set_chart_type,
+                width="100%",
+            ),
+            
+            # X and Y columns side by side
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Y",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ),
+            
+            # Group by
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                label="Group By",
+                selected_key=by_col,
+                on_selection_change=set_by_col,
+                width="100%",
+            ),
+            
+            # Scatter-specific options
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Size",
+                    selected_key=size_col,
+                    on_selection_change=set_size_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "scatter" else None,
+            
+            # Line-specific options
+            ui.flex(
+                ui.checkbox(
+                    "Markers",
+                    is_selected=markers,
+                    on_change=set_markers,
+                ),
+                ui.picker(
+                    *[ui.item(ls["label"], key=ls["key"]) for ls in LINE_SHAPES],
+                    label="Line Shape",
+                    selected_key=line_shape,
+                    on_selection_change=set_line_shape,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                align_items="end",
+                width="100%",
+            ) if chart_type == "line" else None,
+            
+            # Title
+            ui.text_field(
+                label="Title",
+                value=title,
+                on_change=set_title,
+                width="100%",
+            ),
+            
+            direction="column",
+            gap="size-100",
+        ),
+        padding="size-200",
+        background_color="gray-100",
+        border_radius="medium",
+        min_width="size-3000",
+    )
+    
+    # Chart area
+    chart_area = ui.view(
+        ui.text(error_message, UNSAFE_style={"color": "var(--spectrum-negative-color-900)"}) if error_message 
+        else chart if chart 
+        else ui.flex(
+            ui.text("Select X and Y columns to preview chart", UNSAFE_style={"color": "var(--spectrum-gray-600)"}),
+            align_items="center",
+            justify_content="center",
+            height="100%",
+        ),
+        flex_grow=1,
+        min_height="size-3000",
+    )
+    
+    # Main layout - controls on left, chart on right
     return ui.flex(
-        # Chart type selector
-        ui.picker(
-            *[ui.item(ct["label"], key=ct["key"]) for ct in CHART_TYPES],
-            label="Chart Type",
-            selected_key=chart_type,
-            on_selection_change=set_chart_type,
-        ),
-        
-        # Data mapping section
-        ui.flex(
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                label="X Column",
-                selected_key=x_col,
-                on_selection_change=set_x_col,
-            ),
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                label="Y Column",
-                selected_key=y_col,
-                on_selection_change=set_y_col,
-            ),
-            direction="row",
-            gap="size-200",
-        ),
-        
-        # Grouping section
-        ui.picker(
-            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-            label="Group By",
-            selected_key=by_col,
-            on_selection_change=set_by_col,
-        ),
-        
-        # Scatter-specific options
-        ui.flex(
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Size Column",
-                selected_key=size_col,
-                on_selection_change=set_size_col,
-            ),
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Symbol Column",
-                selected_key=symbol_col,
-                on_selection_change=set_symbol_col,
-            ),
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Color Column",
-                selected_key=color_col,
-                on_selection_change=set_color_col,
-            ),
-            direction="row",
-            gap="size-200",
-        ) if chart_type == "scatter" else None,
-        
-        # Line-specific options
-        ui.flex(
-            ui.checkbox(
-                "Show Markers",
-                is_selected=markers,
-                on_change=set_markers,
-            ),
-            ui.picker(
-                *[ui.item(ls["label"], key=ls["key"]) for ls in LINE_SHAPES],
-                label="Line Shape",
-                selected_key=line_shape,
-                on_selection_change=set_line_shape,
-            ),
-            direction="row",
-            gap="size-200",
-            align_items="end",
-        ) if chart_type == "line" else None,
-        
-        # Title input
-        ui.text_field(
-            label="Chart Title",
-            value=title,
-            on_change=set_title,
-        ),
-        
-        # Error message
-        ui.text(error_message, UNSAFE_style={"color": "red"}) if error_message else None,
-        
-        # Chart preview
-        chart if chart else ui.text("Select X and Y columns to preview chart"),
-        
-        direction="column",
+        controls,
+        chart_area,
+        direction="row",
         gap="size-200",
+        height="100%",
     )
 
 
