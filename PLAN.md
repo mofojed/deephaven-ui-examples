@@ -3,6 +3,7 @@
 ## Goal
 
 Set up a complete development environment for the deephaven-ui-examples repository, including:
+
 - Python virtual environment with all required dependencies
 - Utility scripts for running examples
 - Unit testing framework
@@ -32,18 +33,17 @@ deephaven-ui-examples/
 │   └── start_server.py          # Start Deephaven server
 ├── tests/
 │   ├── conftest.py              # Pytest configuration and fixtures
-│   ├── unit/                    # Unit tests
-│   │   └── test_<example>.py    # Unit tests for each example
-│   └── e2e/                     # End-to-end tests
-│       ├── conftest.py          # Playwright fixtures
-│       ├── playwright.config.py # Playwright configuration
-│       └── test_<example>.py    # E2E tests for each example
+│   └── e2e/
+│       └── conftest.py          # Playwright fixtures and server management
 ├── examples/
 │   └── example-name/
-│       ├── PLAN.md
-│       ├── README.md
-│       ├── example_name.py
-│       └── test_example_name.py # Optional: example-specific unit tests
+│       ├── PLAN.md              # Design plan (create FIRST)
+│       ├── README.md            # Usage instructions and screenshots
+│       ├── example_name.py      # Main example code
+│       ├── unit/                # Unit tests for this example
+│       │   └── test_*.py
+│       └── e2e/                 # E2E tests for this example
+│           └── test_*.py
 └── playwright/                  # Playwright browser data (gitignored)
 ```
 
@@ -52,6 +52,7 @@ deephaven-ui-examples/
 ### 1. Python Environment Setup
 
 **requirements.txt:**
+
 ```
 deephaven-core
 deephaven-server
@@ -60,6 +61,7 @@ deephaven-plugin-plotly-express
 ```
 
 **requirements-dev.txt:**
+
 ```
 -r requirements.txt
 pytest
@@ -69,6 +71,7 @@ pytest-playwright
 ```
 
 **setup.sh script will:**
+
 1. Create a Python venv in `.venv/`
 2. Install requirements.txt
 3. Install requirements-dev.txt (optional with --dev flag)
@@ -77,12 +80,14 @@ pytest-playwright
 ### 2. Utility Scripts
 
 **scripts/start_server.py:**
+
 - Start Deephaven server programmatically using `deephaven-server`
 - Configure to load examples directory
 - Accept port configuration
 - Support for running in background or foreground
 
 **scripts/run_example.py:**
+
 - Accept example name as argument
 - Start Deephaven server if not running
 - Execute the example's main Python file
@@ -91,42 +96,47 @@ pytest-playwright
 ### 3. Unit Testing Framework
 
 **Structure:**
+
 - Use pytest as the test runner
-- Tests in `tests/unit/` directory
-- Test files named `test_<example_name>.py`
-- Each example can also have local tests in its folder
+- Tests in `examples/<example-name>/unit/` directory
+- Test files named `test_*.py`
 
 **What to test:**
+
 - Component function returns valid UI elements
 - State management works correctly
 - Data transformations produce expected results
 - Edge cases and error handling
 
 **Running tests:**
-```bash
-# Run all unit tests
-pytest tests/unit/
 
-# Run tests for a specific example
-pytest tests/unit/test_example_name.py
+```bash
+# Run all unit tests across all examples
+pytest examples/*/unit/
+
+# Run unit tests for a specific example
+pytest examples/example-name/unit/
 
 # Run tests with coverage
-pytest tests/unit/ --cov=examples
+pytest examples/*/unit/ --cov=examples
 ```
 
 ### 4. End-to-End Testing with Playwright
 
 **Setup:**
+
 - Use pytest-playwright for Python integration
 - Configure base URL to local Deephaven server
 - Fixtures to start/stop server automatically
 
 **tests/e2e/conftest.py will provide:**
+
 - `deephaven_server` fixture - starts server before tests, stops after
 - `deephaven_page` fixture - navigates to Deephaven UI
 - Helper functions for common UI interactions
 
 **Test structure:**
+
 ```python
 def test_example_renders(deephaven_page):
     """Test that the example UI renders correctly."""
@@ -137,15 +147,16 @@ def test_example_renders(deephaven_page):
 ```
 
 **Running E2E tests:**
+
 ```bash
-# Run all E2E tests
-pytest tests/e2e/
+# Run all E2E tests across all examples
+pytest examples/*/e2e/
 
 # Run E2E tests for a specific example
-pytest tests/e2e/test_example_name.py
+pytest examples/example-name/e2e/
 
 # Run with headed browser (for debugging)
-pytest tests/e2e/ --headed
+pytest examples/*/e2e/ --headed
 
 # Run with specific browser
 pytest tests/e2e/ --browser chromium
@@ -154,6 +165,7 @@ pytest tests/e2e/ --browser chromium
 ### 5. CI/CD Integration
 
 **GitHub Actions workflow will:**
+
 1. Set up Python environment
 2. Install dependencies
 3. Run unit tests
@@ -164,8 +176,9 @@ pytest tests/e2e/ --browser chromium
 ## Dependencies
 
 **Python packages:**
+
 - deephaven-core
-- deephaven-server  
+- deephaven-server
 - deephaven-plugin-ui
 - deephaven-plugin-plotly-express
 - pytest
@@ -174,6 +187,7 @@ pytest tests/e2e/ --browser chromium
 - pytest-playwright
 
 **System requirements:**
+
 - Python 3.9+
 - Node.js (for Playwright browsers)
 
@@ -203,11 +217,11 @@ source .venv/bin/activate
 python scripts/run_example.py example-name
 
 # Run all unit tests
-pytest tests/unit/
+pytest examples/*/unit/
 
 # Run all E2E tests
-pytest tests/e2e/
+pytest examples/*/e2e/
 
-# Run tests for specific example
-pytest -k "example_name"
+# Run all tests for a specific example
+pytest examples/example-name/
 ```
