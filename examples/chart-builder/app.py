@@ -18,6 +18,25 @@ if TYPE_CHECKING:
 
 
 # =============================================================================
+# Pre-defined Map Centers
+# =============================================================================
+
+# Center coordinates for the outages dataset (Minneapolis-St. Paul metro area)
+OUTAGE_CENTER = {"lat": 44.97, "lon": -93.17}
+
+# Center coordinates for the flights dataset (Central Canada)
+FLIGHT_CENTER = {"lat": 50.0, "lon": -100.0}
+
+# Pre-defined center options for the UI picker
+MAP_CENTER_PRESETS = [
+    {"key": "none", "label": "(None - Auto)"},
+    {"key": "outages", "label": "Outages Center (Minneapolis)"},
+    {"key": "flights", "label": "Flights Center (Canada)"},
+    {"key": "custom", "label": "Custom..."},
+]
+
+
+# =============================================================================
 # Type Definitions
 # =============================================================================
 
@@ -83,6 +102,7 @@ class ChartConfig(TypedDict):
     locationmode: NotRequired[Literal["ISO-3", "USA-states", "country names"]]
     radius: NotRequired[int]
     zoom: NotRequired[int]
+    center: NotRequired[dict[str, float]]  # {"lat": float, "lon": float}
 
 
 # =============================================================================
@@ -522,6 +542,8 @@ def _make_scatter_map(table: Table, config: ChartConfig):
         kwargs["color"] = config["color"]
     if config.get("zoom"):
         kwargs["zoom"] = config["zoom"]
+    if config.get("center"):
+        kwargs["center"] = config["center"]
     if config.get("title"):
         kwargs["title"] = config["title"]
     return dx.scatter_map(table, **kwargs)
@@ -536,6 +558,8 @@ def _make_line_map(table: Table, config: ChartConfig):
         kwargs["color"] = config["color"]
     if config.get("zoom"):
         kwargs["zoom"] = config["zoom"]
+    if config.get("center"):
+        kwargs["center"] = config["center"]
     if config.get("title"):
         kwargs["title"] = config["title"]
     return dx.line_map(table, **kwargs)
@@ -550,6 +574,8 @@ def _make_density_map(table: Table, config: ChartConfig):
         kwargs["radius"] = config["radius"]
     if config.get("zoom"):
         kwargs["zoom"] = config["zoom"]
+    if config.get("center"):
+        kwargs["center"] = config["center"]
     if config.get("title"):
         kwargs["title"] = config["title"]
     return dx.density_map(table, **kwargs)
@@ -1032,6 +1058,9 @@ def chart_builder(table: Table) -> ui.Element:
     locationmode, set_locationmode = ui.use_state("")
     radius, set_radius = ui.use_state(15)
     zoom, set_zoom = ui.use_state(3)
+    center_preset, set_center_preset = ui.use_state("none")
+    center_lat, set_center_lat = ui.use_state(0.0)
+    center_lon, set_center_lon = ui.use_state(0.0)
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -1246,6 +1275,13 @@ def chart_builder(table: Table) -> ui.Element:
             config["lon"] = lon_col
         if zoom:
             config["zoom"] = zoom
+        # Set center based on preset or custom values
+        if center_preset == "outages":
+            config["center"] = OUTAGE_CENTER
+        elif center_preset == "flights":
+            config["center"] = FLIGHT_CENTER
+        elif center_preset == "custom":
+            config["center"] = {"lat": center_lat, "lon": center_lon}
         if chart_type == "scatter_map":
             if by_cols:
                 config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
@@ -1752,6 +1788,36 @@ def chart_builder(table: Table) -> ui.Element:
                 max_value=20,
                 width="100%",
             ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
+            # Center selection for tile-based maps
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in MAP_CENTER_PRESETS],
+                label="Map Center",
+                selected_key=center_preset,
+                on_selection_change=set_center_preset,
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
+            # Custom center coordinates (only shown when "custom" is selected)
+            ui.flex(
+                ui.number_field(
+                    label="Center Latitude",
+                    value=center_lat,
+                    on_change=set_center_lat,
+                    min_value=-90,
+                    max_value=90,
+                    flex_grow=1,
+                ),
+                ui.number_field(
+                    label="Center Longitude",
+                    value=center_lon,
+                    on_change=set_center_lon,
+                    min_value=-180,
+                    max_value=180,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") and center_preset == "custom" else None,
             
             # Group by (for charts that support it - not pie, density_heatmap, financial, or hierarchical)
             ui.flex(
@@ -1965,6 +2031,9 @@ def chart_builder_app() -> ui.Element:
     locationmode, set_locationmode = ui.use_state("")
     radius, set_radius = ui.use_state(15)
     zoom, set_zoom = ui.use_state(3)
+    center_preset, set_center_preset = ui.use_state("none")
+    center_lat, set_center_lat = ui.use_state(0.0)
+    center_lon, set_center_lon = ui.use_state(0.0)
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -2014,6 +2083,10 @@ def chart_builder_app() -> ui.Element:
         set_lon_col("")
         set_locations_col("")
         set_locationmode("")
+        # Reset map center options
+        set_center_preset("none")
+        set_center_lat(0.0)
+        set_center_lon(0.0)
     
     # Get column names from table
     columns = _get_column_names(table)
@@ -2182,6 +2255,13 @@ def chart_builder_app() -> ui.Element:
             config["lon"] = lon_col
         if zoom:
             config["zoom"] = zoom
+        # Set center based on preset or custom values
+        if center_preset == "outages":
+            config["center"] = OUTAGE_CENTER
+        elif center_preset == "flights":
+            config["center"] = FLIGHT_CENTER
+        elif center_preset == "custom":
+            config["center"] = {"lat": center_lat, "lon": center_lon}
         if chart_type == "scatter_map":
             if by_cols:
                 config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
@@ -2757,6 +2837,36 @@ def chart_builder_app() -> ui.Element:
                 max_value=20,
                 width="100%",
             ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
+            # Center selection for tile-based maps
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in MAP_CENTER_PRESETS],
+                label="Map Center",
+                selected_key=center_preset,
+                on_selection_change=set_center_preset,
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
+            # Custom center coordinates (only shown when "custom" is selected)
+            ui.flex(
+                ui.number_field(
+                    label="Center Latitude",
+                    value=center_lat,
+                    on_change=set_center_lat,
+                    min_value=-90,
+                    max_value=90,
+                    flex_grow=1,
+                ),
+                ui.number_field(
+                    label="Center Longitude",
+                    value=center_lon,
+                    on_change=set_center_lon,
+                    min_value=-180,
+                    max_value=180,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("scatter_map", "line_map", "density_map") and center_preset == "custom" else None,
             
             # Group by (for charts that support it - not pie, density_heatmap, OHLC, or hierarchical charts)
             ui.flex(

@@ -633,3 +633,51 @@ class TestMakeChartCreation:
         
         chart = make_chart(table, config)
         assert chart is not None
+
+    def test_make_scatter_map_with_center(self):
+        """Test creating a scatter_map chart with custom center."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.flights()
+        config: ChartConfig = {
+            "chart_type": "scatter_map",
+            "lat": "Lat",
+            "lon": "Lon",
+            "center": {"lat": 50.0, "lon": -100.0},
+            "zoom": 3,
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_line_map_with_center(self):
+        """Test creating a line_map chart with custom center."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.flights()
+        config: ChartConfig = {
+            "chart_type": "line_map",
+            "lat": "Lat",
+            "lon": "Lon",
+            "center": {"lat": 44.97, "lon": -93.17},
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_density_map_with_center(self):
+        """Test creating a density_map chart with custom center."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.outages()
+        config: ChartConfig = {
+            "chart_type": "density_map",
+            "lat": "Lat",
+            "lon": "Lon",
+            "center": {"lat": 44.97, "lon": -93.17},
+            "radius": 10,
+            "zoom": 5,
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
