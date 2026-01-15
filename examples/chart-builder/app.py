@@ -1731,18 +1731,105 @@ def _load_dataset(name: str) -> Table:
     return loaders[name]()
 
 
+# Mapping of data types to icons and friendly names
+DATA_TYPE_INFO = {
+    # Numeric types - use vsSymbolNumeric or a number-related icon
+    "int": {"icon": "vsSymbolNumeric", "label": "Integer"},
+    "long": {"icon": "vsSymbolNumeric", "label": "Long"},
+    "short": {"icon": "vsSymbolNumeric", "label": "Short"},
+    "byte": {"icon": "vsSymbolNumeric", "label": "Byte"},
+    "float": {"icon": "vsSymbolNumeric", "label": "Float"},
+    "double": {"icon": "vsSymbolNumeric", "label": "Double"},
+    "java.lang.Integer": {"icon": "vsSymbolNumeric", "label": "Integer"},
+    "java.lang.Long": {"icon": "vsSymbolNumeric", "label": "Long"},
+    "java.lang.Short": {"icon": "vsSymbolNumeric", "label": "Short"},
+    "java.lang.Byte": {"icon": "vsSymbolNumeric", "label": "Byte"},
+    "java.lang.Float": {"icon": "vsSymbolNumeric", "label": "Float"},
+    "java.lang.Double": {"icon": "vsSymbolNumeric", "label": "Double"},
+    "java.math.BigDecimal": {"icon": "vsSymbolNumeric", "label": "Decimal"},
+    "java.math.BigInteger": {"icon": "vsSymbolNumeric", "label": "Big Integer"},
+    # String types
+    "java.lang.String": {"icon": "vsSymbolString", "label": "String"},
+    "char": {"icon": "vsSymbolString", "label": "Char"},
+    "java.lang.Character": {"icon": "vsSymbolString", "label": "Character"},
+    # Boolean
+    "boolean": {"icon": "vsSymbolBoolean", "label": "Boolean"},
+    "java.lang.Boolean": {"icon": "vsSymbolBoolean", "label": "Boolean"},
+    # Date/Time types
+    "java.time.Instant": {"icon": "vsCalendar", "label": "Instant"},
+    "java.time.LocalDate": {"icon": "vsCalendar", "label": "Date"},
+    "java.time.LocalTime": {"icon": "vsClock", "label": "Time"},
+    "java.time.LocalDateTime": {"icon": "vsCalendar", "label": "DateTime"},
+    "java.time.ZonedDateTime": {"icon": "vsCalendar", "label": "ZonedDateTime"},
+    "io.deephaven.time.DateTime": {"icon": "vsCalendar", "label": "DateTime"},
+}
+
+
+def _get_type_info(type_str: str) -> dict:
+    """Get icon and label for a data type."""
+    # Check for exact match first
+    if type_str in DATA_TYPE_INFO:
+        return DATA_TYPE_INFO[type_str]
+    # Check for array types
+    if type_str.endswith("[]"):
+        return {"icon": "vsSymbolArray", "label": "Array"}
+    # Default for unknown types
+    return {"icon": "vsSymbolField", "label": type_str.split(".")[-1]}
+
+
+def _get_column_info(table: Table) -> list[dict]:
+    """Get column names and types from a table."""
+    result = []
+    for col in table.columns:
+        type_str = str(col.data_type)
+        type_info = _get_type_info(type_str)
+        result.append({
+            "name": col.name,
+            "type": type_str,
+            "type_label": type_info["label"],
+            "icon": type_info["icon"],
+        })
+    return result
+
+
 def _get_column_names(table: Table) -> list[str]:
     """Get column names from a table."""
     return [col.name for col in table.columns]
 
 
-def _column_picker_items(columns: list[str], include_none: bool = True) -> list[dict]:
-    """Create picker items from column names."""
+def _column_picker_items(
+    columns: list[dict], include_none: bool = True
+) -> list[dict]:
+    """Create picker items from column info with types and icons."""
     items = []
     if include_none:
-        items.append({"key": "", "label": "(None)"})
-    items.extend({"key": col, "label": col} for col in columns)
+        items.append({
+            "key": "",
+            "label": "(None)",
+            "description": "",
+            "icon": "vsCircleSlash",
+        })
+    items.extend({
+        "key": col["name"],
+        "label": col["name"],
+        "description": col["type_label"],
+        "icon": col["icon"],
+    } for col in columns)
     return items
+
+
+def _render_column_picker_items(items: list[dict]) -> list:
+    """Render column picker items with icons and descriptions."""
+    return [
+        ui.item(
+            ui.icon(item["icon"]),
+            ui.text(item["label"]),
+            ui.text(item["description"], slot="description") if item["description"] else None,
+            key=item["key"],
+            text_value=item["label"],
+        )
+        for item in items
+    ]
 
 
 @ui.component
@@ -1837,16 +1924,17 @@ def chart_builder(table: Table) -> ui.Element:
         """Remove a group by column at a specific index."""
         set_by_cols(by_cols[:index] + by_cols[index + 1 :])
 
-    # Get column names from table
-    columns = _get_column_names(table)
-    column_items = _column_picker_items(columns, include_none=False)
-    optional_column_items = _column_picker_items(columns, include_none=True)
+    # Get column info from table (with types and icons)
+    column_info = _get_column_info(table)
+    columns = [col["name"] for col in column_info]
+    column_items = _column_picker_items(column_info, include_none=False)
+    optional_column_items = _column_picker_items(column_info, include_none=True)
 
     # Available columns for group by at each position (exclude already selected except current)
     def get_by_picker_items(index: int) -> list[dict]:
         """Get picker items for a group by dropdown, excluding already selected columns."""
         selected_at_other_indices = [c for i, c in enumerate(by_cols) if i != index]
-        available = [c for c in columns if c not in selected_at_other_indices]
+        available = [col for col in column_info if col["name"] not in selected_at_other_indices]
         return _column_picker_items(available, include_none=True)
 
     # Build configuration from state
@@ -2124,20 +2212,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="X",
                         selected_key=x_col,
                         on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
@@ -2164,20 +2246,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="X",
                         selected_key=x_col,
                         on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
@@ -2193,7 +2269,7 @@ def chart_builder(table: Table) -> ui.Element:
             # X column for candlestick/ohlc (usually timestamp/date)
             (
                 ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    *_render_column_picker_items(column_items),
                     label="X (Date/Time)",
                     selected_key=x_col,
                     on_selection_change=set_x_col,
@@ -2206,20 +2282,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Open",
                         selected_key=open_col,
                         on_selection_change=set_open_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="High",
                         selected_key=high_col,
                         on_selection_change=set_high_col,
@@ -2235,20 +2305,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Low",
                         selected_key=low_col,
                         on_selection_change=set_low_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Close",
                         selected_key=close_col,
                         on_selection_change=set_close_col,
@@ -2265,20 +2329,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Names",
                         selected_key=names_col,
                         on_selection_change=set_names_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Values",
                         selected_key=values_col,
                         on_selection_change=set_values_col,
@@ -2295,20 +2353,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Names",
                         selected_key=names_col,
                         on_selection_change=set_names_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Values",
                         selected_key=values_col,
                         on_selection_change=set_values_col,
@@ -2323,7 +2375,7 @@ def chart_builder(table: Table) -> ui.Element:
             ),
             (
                 ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    *_render_column_picker_items(column_items),
                     label="Parents",
                     selected_key=parents_col,
                     on_selection_change=set_parents_col,
@@ -2336,20 +2388,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Names",
                         selected_key=names_col,
                         on_selection_change=set_names_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Values",
                         selected_key=values_col,
                         on_selection_change=set_values_col,
@@ -2366,20 +2412,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="X",
                         selected_key=x_col,
                         on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
@@ -2396,30 +2436,21 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="X",
                         selected_key=x_col,
                         on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Z",
                         selected_key=z_col,
                         on_selection_change=set_z_col,
@@ -2436,20 +2467,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="R (radius)",
                         selected_key=r_col,
                         on_selection_change=set_r_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Theta (angle)",
                         selected_key=theta_col,
                         on_selection_change=set_theta_col,
@@ -2466,30 +2491,21 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="A",
                         selected_key=a_col,
                         on_selection_change=set_a_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="B",
                         selected_key=b_col,
                         on_selection_change=set_b_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="C",
                         selected_key=c_col,
                         on_selection_change=set_c_col,
@@ -2506,20 +2522,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Start",
                         selected_key=x_start_col,
                         on_selection_change=set_x_start_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="End",
                         selected_key=x_end_col,
                         on_selection_change=set_x_end_col,
@@ -2534,7 +2544,7 @@ def chart_builder(table: Table) -> ui.Element:
             ),
             (
                 ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    *_render_column_picker_items(column_items),
                     label="Y (Task/Label)",
                     selected_key=y_col,
                     on_selection_change=set_y_col,
@@ -2547,20 +2557,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Lat",
                         selected_key=lat_col,
                         on_selection_change=set_lat_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Lon",
                         selected_key=lon_col,
                         on_selection_change=set_lon_col,
@@ -2576,10 +2580,7 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Locations",
                         selected_key=locations_col,
                         on_selection_change=set_locations_col,
@@ -2605,20 +2606,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -2633,10 +2628,7 @@ def chart_builder(table: Table) -> ui.Element:
             ),
             (
                 ui.picker(
-                    *[
-                        ui.item(item["label"], key=item["key"])
-                        for item in optional_column_items
-                    ],
+                    *_render_column_picker_items(optional_column_items),
                     label="Color",
                     selected_key=color_col,
                     on_selection_change=set_color_col,
@@ -2649,20 +2641,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Lat",
                         selected_key=lat_col,
                         on_selection_change=set_lat_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Lon",
                         selected_key=lon_col,
                         on_selection_change=set_lon_col,
@@ -2678,20 +2664,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -2706,10 +2686,7 @@ def chart_builder(table: Table) -> ui.Element:
             ),
             (
                 ui.picker(
-                    *[
-                        ui.item(item["label"], key=item["key"])
-                        for item in optional_column_items
-                    ],
+                    *_render_column_picker_items(optional_column_items),
                     label="Color",
                     selected_key=color_col,
                     on_selection_change=set_color_col,
@@ -2721,10 +2698,7 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Z (Intensity)",
                         selected_key=z_col,
                         on_selection_change=set_z_col,
@@ -2821,10 +2795,7 @@ def chart_builder(table: Table) -> ui.Element:
                     *[
                         ui.flex(
                             ui.picker(
-                                *[
-                                    ui.item(item["label"], key=item["key"])
-                                    for item in get_by_picker_items(i)
-                                ],
+                                *_render_column_picker_items(get_by_picker_items(i)),
                                 label="Group By" if i == 0 else f"Group {i + 1}",
                                 selected_key=by_cols[i] if i < len(by_cols) else "",
                                 on_selection_change=lambda col, idx=i: update_by_col(
@@ -2897,20 +2868,14 @@ def chart_builder(table: Table) -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -3198,16 +3163,17 @@ def chart_builder_app() -> ui.Element:
         set_center_lon(0.0)
         set_map_style("")
 
-    # Get column names from table
-    columns = _get_column_names(table)
-    column_items = _column_picker_items(columns, include_none=False)
-    optional_column_items = _column_picker_items(columns, include_none=True)
+    # Get column info from table (with types and icons)
+    column_info = _get_column_info(table)
+    columns = [col["name"] for col in column_info]
+    column_items = _column_picker_items(column_info, include_none=False)
+    optional_column_items = _column_picker_items(column_info, include_none=True)
 
     # Available columns for group by at each position (exclude already selected except current)
     def get_by_picker_items(index: int) -> list[dict]:
         """Get picker items for a group by dropdown, excluding already selected columns."""
         selected_at_other_indices = [c for i, c in enumerate(by_cols) if i != index]
-        available = [c for c in columns if c not in selected_at_other_indices]
+        available = [col for col in column_info if col["name"] not in selected_at_other_indices]
         return _column_picker_items(available, include_none=True)
 
     # Build configuration from state
@@ -3618,20 +3584,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="X",
                         selected_key=x_col,
                         on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
@@ -3658,20 +3618,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="X",
                         selected_key=x_col,
                         on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
@@ -3687,7 +3641,7 @@ def chart_builder_app() -> ui.Element:
             # X column for candlestick/ohlc (usually timestamp/date)
             (
                 ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    *_render_column_picker_items(column_items),
                     label="X (Date/Time)",
                     selected_key=x_col,
                     on_selection_change=set_x_col,
@@ -3700,20 +3654,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Open",
                         selected_key=open_col,
                         on_selection_change=set_open_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="High",
                         selected_key=high_col,
                         on_selection_change=set_high_col,
@@ -3729,20 +3677,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Low",
                         selected_key=low_col,
                         on_selection_change=set_low_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Close",
                         selected_key=close_col,
                         on_selection_change=set_close_col,
@@ -3759,20 +3701,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Names",
                         selected_key=names_col,
                         on_selection_change=set_names_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Values",
                         selected_key=values_col,
                         on_selection_change=set_values_col,
@@ -3789,20 +3725,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Names",
                         selected_key=names_col,
                         on_selection_change=set_names_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Values",
                         selected_key=values_col,
                         on_selection_change=set_values_col,
@@ -3817,7 +3747,7 @@ def chart_builder_app() -> ui.Element:
             ),
             (
                 ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    *_render_column_picker_items(column_items),
                     label="Parents",
                     selected_key=parents_col,
                     on_selection_change=set_parents_col,
@@ -3830,20 +3760,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Names",
                         selected_key=names_col,
                         on_selection_change=set_names_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Values",
                         selected_key=values_col,
                         on_selection_change=set_values_col,
@@ -3860,20 +3784,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="X",
                         selected_key=x_col,
                         on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
@@ -3890,30 +3808,21 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="X",
                         selected_key=x_col,
                         on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Z",
                         selected_key=z_col,
                         on_selection_change=set_z_col,
@@ -3929,20 +3838,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -3959,20 +3862,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="R",
                         selected_key=r_col,
                         on_selection_change=set_r_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Theta",
                         selected_key=theta_col,
                         on_selection_change=set_theta_col,
@@ -3988,20 +3885,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -4018,30 +3909,21 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="A",
                         selected_key=a_col,
                         on_selection_change=set_a_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="B",
                         selected_key=b_col,
                         on_selection_change=set_b_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="C",
                         selected_key=c_col,
                         on_selection_change=set_c_col,
@@ -4057,20 +3939,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -4087,30 +3963,21 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="X Start",
                         selected_key=x_start_col,
                         on_selection_change=set_x_start_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="X End",
                         selected_key=x_end_col,
                         on_selection_change=set_x_end_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Y",
                         selected_key=y_col,
                         on_selection_change=set_y_col,
@@ -4127,20 +3994,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Lat",
                         selected_key=lat_col,
                         on_selection_change=set_lat_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Lon",
                         selected_key=lon_col,
                         on_selection_change=set_lon_col,
@@ -4156,10 +4017,7 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Locations",
                         selected_key=locations_col,
                         on_selection_change=set_locations_col,
@@ -4185,20 +4043,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -4213,10 +4065,7 @@ def chart_builder_app() -> ui.Element:
             ),
             (
                 ui.picker(
-                    *[
-                        ui.item(item["label"], key=item["key"])
-                        for item in optional_column_items
-                    ],
+                    *_render_column_picker_items(optional_column_items),
                     label="Color",
                     selected_key=color_col,
                     on_selection_change=set_color_col,
@@ -4229,20 +4078,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Lat",
                         selected_key=lat_col,
                         on_selection_change=set_lat_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in column_items
-                        ],
+                        *_render_column_picker_items(column_items),
                         label="Lon",
                         selected_key=lon_col,
                         on_selection_change=set_lon_col,
@@ -4258,20 +4101,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -4286,10 +4123,7 @@ def chart_builder_app() -> ui.Element:
             ),
             (
                 ui.picker(
-                    *[
-                        ui.item(item["label"], key=item["key"])
-                        for item in optional_column_items
-                    ],
+                    *_render_column_picker_items(optional_column_items),
                     label="Color",
                     selected_key=color_col,
                     on_selection_change=set_color_col,
@@ -4301,10 +4135,7 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Z (Intensity)",
                         selected_key=z_col,
                         on_selection_change=set_z_col,
@@ -4401,10 +4232,7 @@ def chart_builder_app() -> ui.Element:
                     *[
                         ui.flex(
                             ui.picker(
-                                *[
-                                    ui.item(item["label"], key=item["key"])
-                                    for item in get_by_picker_items(i)
-                                ],
+                                *_render_column_picker_items(get_by_picker_items(i)),
                                 label="Group By" if i == 0 else f"Group {i + 1}",
                                 selected_key=by_cols[i] if i < len(by_cols) else "",
                                 on_selection_change=lambda col, idx=i: update_by_col(
@@ -4479,20 +4307,14 @@ def chart_builder_app() -> ui.Element:
             (
                 ui.flex(
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Size",
                         selected_key=size_col,
                         on_selection_change=set_size_col,
                         flex_grow=1,
                     ),
                     ui.picker(
-                        *[
-                            ui.item(item["label"], key=item["key"])
-                            for item in optional_column_items
-                        ],
+                        *_render_column_picker_items(optional_column_items),
                         label="Color",
                         selected_key=color_col,
                         on_selection_change=set_color_col,
@@ -4550,10 +4372,7 @@ def chart_builder_app() -> ui.Element:
                             ui.flex(
                                 (
                                     ui.picker(
-                                        *[
-                                            ui.item(item["label"], key=item["key"])
-                                            for item in optional_column_items
-                                        ],
+                                        *_render_column_picker_items(optional_column_items),
                                         label="Text Labels",
                                         selected_key=text_col,
                                         on_selection_change=set_text_col,
@@ -4563,10 +4382,7 @@ def chart_builder_app() -> ui.Element:
                                     else None
                                 ),
                                 ui.picker(
-                                    *[
-                                        ui.item(item["label"], key=item["key"])
-                                        for item in optional_column_items
-                                    ],
+                                    *_render_column_picker_items(optional_column_items),
                                     label="Hover Name",
                                     selected_key=hover_name_col,
                                     on_selection_change=set_hover_name_col,
@@ -4595,20 +4411,14 @@ def chart_builder_app() -> ui.Element:
                         (
                             ui.flex(
                                 ui.picker(
-                                    *[
-                                        ui.item(item["label"], key=item["key"])
-                                        for item in optional_column_items
-                                    ],
+                                    *_render_column_picker_items(optional_column_items),
                                     label="Line Dash",
                                     selected_key=line_dash_col,
                                     on_selection_change=set_line_dash_col,
                                     flex_grow=1,
                                 ),
                                 ui.picker(
-                                    *[
-                                        ui.item(item["label"], key=item["key"])
-                                        for item in optional_column_items
-                                    ],
+                                    *_render_column_picker_items(optional_column_items),
                                     label="Line Width",
                                     selected_key=width_col,
                                     on_selection_change=set_width_col,
@@ -4727,20 +4537,14 @@ def chart_builder_app() -> ui.Element:
                                 ),
                                 ui.flex(
                                     ui.picker(
-                                        *[
-                                            ui.item(item["label"], key=item["key"])
-                                            for item in optional_column_items
-                                        ],
+                                        *_render_column_picker_items(optional_column_items),
                                         label="Error X",
                                         selected_key=error_x_col,
                                         on_selection_change=set_error_x_col,
                                         flex_grow=1,
                                     ),
                                     ui.picker(
-                                        *[
-                                            ui.item(item["label"], key=item["key"])
-                                            for item in optional_column_items
-                                        ],
+                                        *_render_column_picker_items(optional_column_items),
                                         label="Error X-",
                                         selected_key=error_x_minus_col,
                                         on_selection_change=set_error_x_minus_col,
@@ -4752,20 +4556,14 @@ def chart_builder_app() -> ui.Element:
                                 ),
                                 ui.flex(
                                     ui.picker(
-                                        *[
-                                            ui.item(item["label"], key=item["key"])
-                                            for item in optional_column_items
-                                        ],
+                                        *_render_column_picker_items(optional_column_items),
                                         label="Error Y",
                                         selected_key=error_y_col,
                                         on_selection_change=set_error_y_col,
                                         flex_grow=1,
                                     ),
                                     ui.picker(
-                                        *[
-                                            ui.item(item["label"], key=item["key"])
-                                            for item in optional_column_items
-                                        ],
+                                        *_render_column_picker_items(optional_column_items),
                                         label="Error Y-",
                                         selected_key=error_y_minus_col,
                                         on_selection_change=set_error_y_minus_col,

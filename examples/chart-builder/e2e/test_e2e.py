@@ -932,3 +932,68 @@ class TestScrollBehaviorE2E:
             f"Code header moved {position_diff}px. "
             "The right panel should stay fixed when scrolling in the controls panel."
         )
+
+
+@pytest.mark.e2e
+class TestColumnTypeDescriptionsE2E:
+    """Tests for column picker type descriptions."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_column_picker_shows_type_descriptions(self, demo_page: Page):
+        """Test that column pickers show data type descriptions."""
+        # Find the X picker using get_by_label with exact match and click to open it
+        x_picker = demo_page.get_by_label("X", exact=True)
+        x_picker.click(timeout=5000)
+
+        # Wait for the popover to appear
+        demo_page.wait_for_timeout(500)
+        popover = demo_page.get_by_test_id("popover")
+        expect(popover).to_be_visible()
+
+        # Check for type descriptions in the picker dropdown
+        # The Iris dataset should have Double type columns like SepalLength
+        double_description = popover.get_by_text("Double")
+        expect(double_description.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_column_picker_shows_string_type(self, demo_page: Page):
+        """Test that string columns show String type description."""
+        # Find the X picker using get_by_label with exact match and click to open it
+        x_picker = demo_page.get_by_label("X", exact=True)
+        x_picker.click(timeout=5000)
+
+        # Wait for the popover to appear
+        demo_page.wait_for_timeout(500)
+        popover = demo_page.get_by_test_id("popover")
+        expect(popover).to_be_visible()
+
+        # The Iris dataset has a Species column which is a String
+        string_description = popover.get_by_text("String")
+        expect(string_description.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_none_option_in_optional_picker(self, demo_page: Page):
+        """Test that optional pickers have a (None) option."""
+        # Find the Color picker using get_by_label with exact match and click to open it
+        color_picker = demo_page.get_by_label("Color", exact=True)
+        color_picker.click(timeout=5000)
+
+        # Wait for the popover to appear
+        demo_page.wait_for_timeout(500)
+        popover = demo_page.get_by_test_id("popover")
+        expect(popover).to_be_visible()
+
+        # Check for the (None) option in the dropdown
+        none_option = popover.get_by_text("(None)")
+        expect(none_option).to_be_visible()
