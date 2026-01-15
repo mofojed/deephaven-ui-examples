@@ -24,7 +24,8 @@ if TYPE_CHECKING:
 ChartType = Literal[
     "scatter", "line", "bar", "area", "pie",
     "histogram", "box", "violin", "strip", "density_heatmap",
-    "candlestick", "ohlc"
+    "candlestick", "ohlc",
+    "treemap", "sunburst", "icicle", "funnel", "funnel_area"
 ]
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
 Orientation = Literal["v", "h"]
@@ -56,6 +57,8 @@ class ChartConfig(TypedDict):
     high: NotRequired[str]
     low: NotRequired[str]
     close: NotRequired[str]
+    # Hierarchical chart options (treemap, sunburst, icicle)
+    parents: NotRequired[str]
 
 
 # =============================================================================
@@ -105,6 +108,23 @@ def _validate_config(config: ChartConfig) -> list[str]:
             errors.append(f"low is required for {chart_type} charts")
         if not config.get("close"):
             errors.append(f"close is required for {chart_type} charts")
+    elif chart_type in ("treemap", "sunburst", "icicle"):
+        if not config.get("names"):
+            errors.append(f"names is required for {chart_type} charts")
+        if not config.get("values"):
+            errors.append(f"values is required for {chart_type} charts")
+        if not config.get("parents"):
+            errors.append(f"parents is required for {chart_type} charts")
+    elif chart_type == "funnel":
+        if not config.get("x"):
+            errors.append("x is required for funnel charts")
+        if not config.get("y"):
+            errors.append("y is required for funnel charts")
+    elif chart_type == "funnel_area":
+        if not config.get("names"):
+            errors.append("names is required for funnel_area charts")
+        if not config.get("values"):
+            errors.append("values is required for funnel_area charts")
     return errors
 
 
@@ -246,6 +266,61 @@ def _make_ohlc(table: Table, config: ChartConfig):
     return dx.ohlc(table, **kwargs)
 
 
+def _make_treemap(table: Table, config: ChartConfig):
+    """Create a treemap chart."""
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+        "parents": config["parents"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.treemap(table, **kwargs)
+
+
+def _make_sunburst(table: Table, config: ChartConfig):
+    """Create a sunburst chart."""
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+        "parents": config["parents"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.sunburst(table, **kwargs)
+
+
+def _make_icicle(table: Table, config: ChartConfig):
+    """Create an icicle chart."""
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+        "parents": config["parents"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.icicle(table, **kwargs)
+
+
+def _make_funnel(table: Table, config: ChartConfig):
+    """Create a funnel chart."""
+    kwargs = {"x": config["x"], "y": config["y"]}
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.funnel(table, **kwargs)
+
+
+def _make_funnel_area(table: Table, config: ChartConfig):
+    """Create a funnel area chart."""
+    kwargs = {
+        "names": config["names"],
+        "values": config["values"],
+    }
+    if config.get("title"):
+        kwargs["title"] = config["title"]
+    return dx.funnel_area(table, **kwargs)
+
+
 def make_chart(table: Table, config: ChartConfig):
     """Create a chart from the given table and configuration."""
     errors = _validate_config(config)
@@ -277,6 +352,16 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_candlestick(table, config)
     elif chart_type == "ohlc":
         return _make_ohlc(table, config)
+    elif chart_type == "treemap":
+        return _make_treemap(table, config)
+    elif chart_type == "sunburst":
+        return _make_sunburst(table, config)
+    elif chart_type == "icicle":
+        return _make_icicle(table, config)
+    elif chart_type == "funnel":
+        return _make_funnel(table, config)
+    elif chart_type == "funnel_area":
+        return _make_funnel_area(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -298,6 +383,11 @@ CHART_TYPES = [
     {"key": "density_heatmap", "label": "Density Heatmap", "icon": "vsSymbolColor"},
     {"key": "candlestick", "label": "Candlestick", "icon": "vsGraphLine"},
     {"key": "ohlc", "label": "OHLC", "icon": "vsGraphLine"},
+    {"key": "treemap", "label": "Treemap", "icon": "vsSymbolClass"},
+    {"key": "sunburst", "label": "Sunburst", "icon": "vsPieChart"},
+    {"key": "icicle", "label": "Icicle", "icon": "vsGraphLeft"},
+    {"key": "funnel", "label": "Funnel", "icon": "vsTriangleDown"},
+    {"key": "funnel_area", "label": "Funnel Area", "icon": "vsTriangleDown"},
 ]
 
 ORIENTATIONS = [
@@ -325,6 +415,8 @@ DATASETS = [
     {"key": "jobs", "label": "Jobs", "description": "Employment data"},
     {"key": "marketing", "label": "Marketing", "description": "Marketing campaign data"},
     {"key": "ohlc_sample", "label": "Stocks OHLC (1min)", "description": "Stocks data binned into 1-minute OHLC"},
+    {"key": "hierarchy_sample", "label": "Product Hierarchy", "description": "Hierarchical product sales data"},
+    {"key": "funnel_sample", "label": "Sales Funnel", "description": "Sales funnel stages"},
 ]
 
 
@@ -357,10 +449,70 @@ def _create_ohlc_sample() -> Table:
     ).where("Sym == `DOG`")
 
 
+def _create_hierarchy_sample() -> Table:
+    """Create a hierarchical dataset for treemap, sunburst, icicle charts.
+    
+    Creates a product hierarchy: Total -> Category -> Subcategory
+    with sales values for each node.
+    """
+    from deephaven import new_table
+    from deephaven.column import string_col, int_col
+    
+    # Hierarchical data: names, parents (empty string for root), values
+    # Structure: Total (root) -> Electronics, Clothing, Food -> specific items
+    return new_table([
+        string_col("Name", [
+            "Total",
+            "Electronics", "Clothing", "Food",
+            "Phones", "Laptops", "Tablets",
+            "Shirts", "Pants", "Shoes",
+            "Fruits", "Vegetables", "Dairy"
+        ]),
+        string_col("Parent", [
+            "",  # root has no parent
+            "Total", "Total", "Total",
+            "Electronics", "Electronics", "Electronics",
+            "Clothing", "Clothing", "Clothing",
+            "Food", "Food", "Food"
+        ]),
+        int_col("Sales", [
+            0,  # root value (will be sum of children)
+            0, 0, 0,  # category values (sum of children)
+            500, 400, 300,  # Electronics items
+            200, 250, 150,  # Clothing items
+            100, 80, 120   # Food items
+        ]),
+    ])
+
+
+def _create_funnel_sample() -> Table:
+    """Create a funnel dataset for funnel and funnel_area charts.
+    
+    Creates a sales funnel with stages from awareness to purchase.
+    """
+    from deephaven import new_table
+    from deephaven.column import string_col, int_col
+    
+    return new_table([
+        string_col("Stage", [
+            "Website Visits",
+            "Downloads",
+            "Signups",
+            "Free Trials",
+            "Purchases"
+        ]),
+        int_col("Count", [10000, 5000, 2500, 1000, 500]),
+    ])
+
+
 def _load_dataset(name: str) -> Table:
     """Load a dataset by name."""
     if name == "ohlc_sample":
         return _create_ohlc_sample()
+    if name == "hierarchy_sample":
+        return _create_hierarchy_sample()
+    if name == "funnel_sample":
+        return _create_funnel_sample()
 
     loaders = {
         "iris": dx.data.iris,
@@ -431,6 +583,9 @@ def chart_builder(table: Table) -> ui.Element:
     high_col, set_high_col = ui.use_state("")
     low_col, set_low_col = ui.use_state("")
     close_col, set_close_col = ui.use_state("")
+    
+    # Hierarchical chart state (treemap, sunburst, icicle)
+    parents_col, set_parents_col = ui.use_state("")
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -536,18 +691,28 @@ def chart_builder(table: Table) -> ui.Element:
         if orientation:
             config["orientation"] = orientation
     
-    # Candlestick/OHLC config
-    if chart_type in ("candlestick", "ohlc"):
+    # Hierarchical chart config (treemap, sunburst, icicle)
+    if chart_type in ("treemap", "sunburst", "icicle"):
+        if names_col:
+            config["names"] = names_col
+        if values_col:
+            config["values"] = values_col
+        if parents_col:
+            config["parents"] = parents_col
+    
+    # Funnel chart config
+    if chart_type == "funnel":
         if x_col:
             config["x"] = x_col
-        if open_col:
-            config["open"] = open_col
-        if high_col:
-            config["high"] = high_col
-        if low_col:
-            config["low"] = low_col
-        if close_col:
-            config["close"] = close_col
+        if y_col:
+            config["y"] = y_col
+    
+    # Funnel area chart config
+    if chart_type == "funnel_area":
+        if names_col:
+            config["names"] = names_col
+        if values_col:
+            config["values"] = values_col
     
     # Determine if chart can be created
     can_create_chart = False
@@ -561,6 +726,12 @@ def chart_builder(table: Table) -> ui.Element:
         can_create_chart = bool(x_col and y_col)
     elif chart_type in ("candlestick", "ohlc"):
         can_create_chart = bool(x_col and open_col and high_col and low_col and close_col)
+    elif chart_type in ("treemap", "sunburst", "icicle"):
+        can_create_chart = bool(names_col and values_col and parents_col)
+    elif chart_type == "funnel":
+        can_create_chart = bool(x_col and y_col)
+    elif chart_type == "funnel_area":
+        can_create_chart = bool(names_col and values_col)
     
     # Create chart if we have valid configuration
     chart = None
@@ -701,7 +872,77 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ) if chart_type == "pie" else None,
             
-            # Group by (for charts that support it - not pie, density_heatmap, or financial)
+            # Names, Values, and Parents columns (for treemap, sunburst, icicle)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Names",
+                    selected_key=names_col,
+                    on_selection_change=set_names_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Values",
+                    selected_key=values_col,
+                    on_selection_change=set_values_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("treemap", "sunburst", "icicle") else None,
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                label="Parents",
+                selected_key=parents_col,
+                on_selection_change=set_parents_col,
+                width="100%",
+            ) if chart_type in ("treemap", "sunburst", "icicle") else None,
+            
+            # Names and Values columns (for funnel_area)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Names",
+                    selected_key=names_col,
+                    on_selection_change=set_names_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Values",
+                    selected_key=values_col,
+                    on_selection_change=set_values_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "funnel_area" else None,
+            
+            # X and Y columns (for funnel)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Y",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "funnel" else None,
+            
+            # Group by (for charts that support it - not pie, density_heatmap, financial, or hierarchical)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
                 *[ui.flex(
@@ -727,7 +968,7 @@ def chart_builder(table: Table) -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc") else None,
+            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area") else None,
             
             # Histogram-specific options
             ui.number_field(
@@ -883,6 +1124,9 @@ def chart_builder_app() -> ui.Element:
     low_col, set_low_col = ui.use_state("")
     close_col, set_close_col = ui.use_state("")
     
+    # Hierarchical chart state
+    parents_col, set_parents_col = ui.use_state("")
+    
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
         """Update a group by column at a specific index."""
@@ -918,6 +1162,7 @@ def chart_builder_app() -> ui.Element:
         set_high_col("")
         set_low_col("")
         set_close_col("")
+        set_parents_col("")
     
     # Get column names from table
     columns = _get_column_names(table)
@@ -980,6 +1225,29 @@ def chart_builder_app() -> ui.Element:
         if close_col:
             config["close"] = close_col
     
+    # Hierarchical chart config (treemap, sunburst, icicle)
+    if chart_type in ("treemap", "sunburst", "icicle"):
+        if names_col:
+            config["names"] = names_col
+        if values_col:
+            config["values"] = values_col
+        if parents_col:
+            config["parents"] = parents_col
+    
+    # Funnel chart config
+    if chart_type == "funnel":
+        if x_col:
+            config["x"] = x_col
+        if y_col:
+            config["y"] = y_col
+    
+    # Funnel area chart config
+    if chart_type == "funnel_area":
+        if names_col:
+            config["names"] = names_col
+        if values_col:
+            config["values"] = values_col
+    
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -992,6 +1260,12 @@ def chart_builder_app() -> ui.Element:
         can_create_chart = bool(x_col and y_col)
     elif chart_type in ("candlestick", "ohlc"):
         can_create_chart = bool(x_col and open_col and high_col and low_col and close_col)
+    elif chart_type in ("treemap", "sunburst", "icicle"):
+        can_create_chart = bool(names_col and values_col and parents_col)
+    elif chart_type == "funnel":
+        can_create_chart = bool(x_col and y_col)
+    elif chart_type == "funnel_area":
+        can_create_chart = bool(names_col and values_col)
     
     chart = None
     error_message = None
@@ -1144,7 +1418,77 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ) if chart_type == "pie" else None,
             
-            # Group by (for charts that support it - not pie, density_heatmap, or OHLC charts)
+            # Names, Values, and Parents columns (for treemap, sunburst, icicle)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Names",
+                    selected_key=names_col,
+                    on_selection_change=set_names_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Values",
+                    selected_key=values_col,
+                    on_selection_change=set_values_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("treemap", "sunburst", "icicle") else None,
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                label="Parents",
+                selected_key=parents_col,
+                on_selection_change=set_parents_col,
+                width="100%",
+            ) if chart_type in ("treemap", "sunburst", "icicle") else None,
+            
+            # Names and Values columns (for funnel_area)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Names",
+                    selected_key=names_col,
+                    on_selection_change=set_names_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Values",
+                    selected_key=values_col,
+                    on_selection_change=set_values_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "funnel_area" else None,
+            
+            # X and Y columns (for funnel)
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Y",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type == "funnel" else None,
+            
+            # Group by (for charts that support it - not pie, density_heatmap, OHLC, or hierarchical charts)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
                 *[ui.flex(
@@ -1170,7 +1514,7 @@ def chart_builder_app() -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc") else None,
+            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area") else None,
             
             # Histogram-specific options
             ui.number_field(

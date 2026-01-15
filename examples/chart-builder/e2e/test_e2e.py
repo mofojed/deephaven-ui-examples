@@ -24,8 +24,8 @@ def widget_page(page: Page) -> Page:
     """Navigate to the iris_chart_builder widget."""
     url = f"{BASE_URL}/iframe/widget/?name=iris_chart_builder&psk={PSK}"
     page.goto(url, timeout=30000)
-    # Wait for the chart builder UI to load
-    page.wait_for_selector("text=Chart Type", timeout=15000)
+    # Wait for the chart builder UI to load using exact text match
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=15000)
     return page
 
 
@@ -36,40 +36,38 @@ class TestChartBuilderE2E:
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
     def test_chart_type_picker_visible(self, widget_page: Page):
         """Test that the chart type picker is visible."""
-        chart_type_picker = widget_page.locator("text=Chart Type")
+        chart_type_picker = widget_page.get_by_text("Chart Type", exact=True)
         expect(chart_type_picker).to_be_visible()
 
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
     def test_column_pickers_visible(self, widget_page: Page):
         """Test that X and Y column pickers are visible."""
-        x_picker = widget_page.locator("text=X Column")
-        y_picker = widget_page.locator("text=Y Column")
+        x_picker = widget_page.get_by_text("X", exact=True).first
+        y_picker = widget_page.get_by_text("Y", exact=True).first
         expect(x_picker).to_be_visible()
         expect(y_picker).to_be_visible()
 
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
     def test_group_by_picker_visible(self, widget_page: Page):
         """Test that Group By picker is visible."""
-        group_by_picker = widget_page.locator("text=Group By")
+        group_by_picker = widget_page.get_by_text("Group By", exact=True)
         expect(group_by_picker).to_be_visible()
 
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
     def test_scatter_options_visible_by_default(self, widget_page: Page):
         """Test that scatter-specific options are visible by default."""
         # Scatter is the default chart type
-        size_picker = widget_page.locator("text=Size Column")
-        symbol_picker = widget_page.locator("text=Symbol Column")
-        color_picker = widget_page.locator("text=Color Column")
+        size_picker = widget_page.get_by_text("Size", exact=True)
+        color_picker = widget_page.get_by_text("Color", exact=True)
         
         expect(size_picker).to_be_visible()
-        expect(symbol_picker).to_be_visible()
         expect(color_picker).to_be_visible()
 
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
     def test_line_options_hidden_by_default(self, widget_page: Page):
         """Test that line-specific options are hidden when scatter is selected."""
         # Line shape should not be visible when scatter is selected
-        line_shape = widget_page.locator("text=Line Shape")
+        line_shape = widget_page.get_by_text("Line Shape", exact=True)
         expect(line_shape).not_to_be_visible()
 
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
@@ -79,16 +77,17 @@ class TestChartBuilderE2E:
         chart_type_button = widget_page.locator("button:has-text('Scatter')")
         chart_type_button.click()
         
-        # Select Line from the dropdown
-        line_option = widget_page.locator("text=Line").first
+        # Select Line from the dropdown using the popover
+        popover = widget_page.get_by_test_id("popover")
+        line_option = popover.get_by_text("Line", exact=True)
         line_option.click()
         
         # Wait for UI to update
         widget_page.wait_for_timeout(500)
         
         # Now line options should be visible
-        line_shape = widget_page.locator("text=Line Shape")
-        markers_checkbox = widget_page.locator("text=Show Markers")
+        line_shape = widget_page.get_by_text("Line Shape", exact=True)
+        markers_checkbox = widget_page.get_by_text("Markers", exact=True)
         
         expect(line_shape).to_be_visible()
         expect(markers_checkbox).to_be_visible()
@@ -100,24 +99,23 @@ class TestChartBuilderE2E:
         chart_type_button = widget_page.locator("button:has-text('Scatter')")
         chart_type_button.click()
         
-        # Select Line from the dropdown
-        line_option = widget_page.locator("text=Line").first
+        # Select Line from the dropdown using the popover
+        popover = widget_page.get_by_test_id("popover")
+        line_option = popover.get_by_text("Line", exact=True)
         line_option.click()
         
         # Wait for UI to update
         widget_page.wait_for_timeout(500)
         
         # Scatter options should be hidden
-        size_picker = widget_page.locator("text=Size Column")
-        symbol_picker = widget_page.locator("text=Symbol Column")
+        size_picker = widget_page.get_by_text("Size", exact=True)
         
         expect(size_picker).not_to_be_visible()
-        expect(symbol_picker).not_to_be_visible()
 
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
     def test_title_field_visible(self, widget_page: Page):
         """Test that the title text field is visible."""
-        title_field = widget_page.locator("text=Chart Title")
+        title_field = widget_page.get_by_text("Title", exact=True)
         expect(title_field).to_be_visible()
 
 
@@ -126,8 +124,8 @@ def ohlc_widget_page(page: Page) -> Page:
     """Navigate to the chart_builder_demo widget and select OHLC dataset."""
     url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
     page.goto(url, timeout=30000)
-    # Wait for the chart builder UI to load
-    page.wait_for_selector("text=Chart Type", timeout=15000)
+    # Wait for the chart builder UI to load using exact text match
+    page.get_by_text("Chart Type", exact=True).wait_for(timeout=15000)
     
     # Select the OHLC sample dataset
     dataset_picker = page.locator("button:has-text('Iris')")
