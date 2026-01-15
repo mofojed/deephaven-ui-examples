@@ -56,15 +56,35 @@ MAP_STYLE_OPTIONS = [
 # =============================================================================
 
 ChartType = Literal[
-    "scatter", "line", "bar", "area", "pie",
-    "histogram", "box", "violin", "strip", "density_heatmap",
-    "candlestick", "ohlc",
-    "treemap", "sunburst", "icicle", "funnel", "funnel_area",
-    "scatter_3d", "line_3d",
-    "scatter_polar", "line_polar",
-    "scatter_ternary", "line_ternary",
+    "scatter",
+    "line",
+    "bar",
+    "area",
+    "pie",
+    "histogram",
+    "box",
+    "violin",
+    "strip",
+    "density_heatmap",
+    "candlestick",
+    "ohlc",
+    "treemap",
+    "sunburst",
+    "icicle",
+    "funnel",
+    "funnel_area",
+    "scatter_3d",
+    "line_3d",
+    "scatter_polar",
+    "line_polar",
+    "scatter_ternary",
+    "line_ternary",
     "timeline",
-    "scatter_geo", "line_geo", "scatter_map", "line_map", "density_map"
+    "scatter_geo",
+    "line_geo",
+    "scatter_map",
+    "line_map",
+    "density_map",
 ]
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
 Orientation = Literal["v", "h"]
@@ -72,6 +92,7 @@ Orientation = Literal["v", "h"]
 
 class ChartConfig(TypedDict):
     """Configuration for chart creation."""
+
     chart_type: ChartType
     x: NotRequired[str]
     y: NotRequired[str]
@@ -125,12 +146,13 @@ class ChartConfig(TypedDict):
 # Chart Configuration Validation
 # =============================================================================
 
+
 def get_required_fields(chart_type: ChartType) -> list[str]:
     """Get the required fields for a given chart type.
-    
+
     Args:
         chart_type: The type of chart.
-        
+
     Returns:
         List of required field names.
     """
@@ -167,12 +189,13 @@ def get_required_fields(chart_type: ChartType) -> list[str]:
 # Chart Creation Functions
 # =============================================================================
 
+
 def validate_config(config: ChartConfig) -> list[str]:
     """Validate a chart configuration.
-    
+
     Args:
         config: The configuration to validate.
-        
+
     Returns:
         List of validation error messages. Empty if valid.
     """
@@ -751,7 +774,7 @@ def make_chart(table: Table, config: ChartConfig):
     errors = validate_config(config)
     if errors:
         raise ValueError(f"Invalid configuration: {'; '.join(errors)}")
-    
+
     chart_type = config["chart_type"]
     if chart_type == "scatter":
         return _make_scatter(table, config)
@@ -863,47 +886,66 @@ def _format_value(value) -> str:
 
 def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
     """Generate Python code to recreate the current chart configuration.
-    
+
     Args:
         config: The chart configuration dictionary.
         dataset_name: The name of the dataset being used.
-        
+
     Returns:
         A string containing Python code that recreates the chart.
     """
     chart_type = config.get("chart_type", "scatter")
-    
+
     # Build the import statement
     lines = ["from deephaven.plot import express as dx", ""]
-    
+
     # Build the table loading code
-    loader = DATASET_LOADERS.get(dataset_name, f'# Load your table here\ntable = your_table')
-    if dataset_name in ("ohlc_sample", "hierarchy_sample", "funnel_sample", 
-                        "scatter_3d_sample", "polar_sample", "ternary_sample", "timeline_sample"):
+    loader = DATASET_LOADERS.get(
+        dataset_name, f"# Load your table here\ntable = your_table"
+    )
+    if dataset_name in (
+        "ohlc_sample",
+        "hierarchy_sample",
+        "funnel_sample",
+        "scatter_3d_sample",
+        "polar_sample",
+        "ternary_sample",
+        "timeline_sample",
+    ):
         lines.append(loader)
     else:
         lines.append(f"table = {loader}")
     lines.append("")
-    
+
     # Build the chart function call
     # Determine which parameters to include based on chart type
     params = []
-    
+
     # Common parameters for most chart types
-    if chart_type in ("scatter", "line", "bar", "area", "histogram", "box", "violin", 
-                      "strip", "density_heatmap", "funnel"):
+    if chart_type in (
+        "scatter",
+        "line",
+        "bar",
+        "area",
+        "histogram",
+        "box",
+        "violin",
+        "strip",
+        "density_heatmap",
+        "funnel",
+    ):
         if config.get("x"):
             params.append(f'x="{config["x"]}"')
         if config.get("y"):
             params.append(f'y="{config["y"]}"')
-    
+
     # Pie-style charts (names, values)
     if chart_type in ("pie", "funnel_area"):
         if config.get("names"):
             params.append(f'names="{config["names"]}"')
         if config.get("values"):
             params.append(f'values="{config["values"]}"')
-    
+
     # Hierarchical charts
     if chart_type in ("treemap", "sunburst", "icicle"):
         if config.get("names"):
@@ -912,7 +954,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'values="{config["values"]}"')
         if config.get("parents"):
             params.append(f'parents="{config["parents"]}"')
-    
+
     # OHLC/Candlestick
     if chart_type in ("candlestick", "ohlc"):
         if config.get("x"):
@@ -925,7 +967,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'low="{config["low"]}"')
         if config.get("close"):
             params.append(f'close="{config["close"]}"')
-    
+
     # 3D charts
     if chart_type in ("scatter_3d", "line_3d"):
         if config.get("x"):
@@ -934,14 +976,14 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'y="{config["y"]}"')
         if config.get("z"):
             params.append(f'z="{config["z"]}"')
-    
+
     # Polar charts
     if chart_type in ("scatter_polar", "line_polar"):
         if config.get("r"):
             params.append(f'r="{config["r"]}"')
         if config.get("theta"):
             params.append(f'theta="{config["theta"]}"')
-    
+
     # Ternary charts
     if chart_type in ("scatter_ternary", "line_ternary"):
         if config.get("a"):
@@ -950,7 +992,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'b="{config["b"]}"')
         if config.get("c"):
             params.append(f'c="{config["c"]}"')
-    
+
     # Timeline
     if chart_type == "timeline":
         if config.get("x_start"):
@@ -959,7 +1001,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'x_end="{config["x_end"]}"')
         if config.get("y"):
             params.append(f'y="{config["y"]}"')
-    
+
     # Geo charts
     if chart_type in ("scatter_geo", "line_geo"):
         if config.get("lat"):
@@ -970,7 +1012,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'locations="{config["locations"]}"')
         if config.get("locationmode"):
             params.append(f'locationmode="{config["locationmode"]}"')
-    
+
     # Map charts (tile-based)
     if chart_type in ("scatter_map", "line_map", "density_map"):
         if config.get("lat"):
@@ -983,38 +1025,38 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'center={_format_value(config["center"])}')
         if config.get("map_style"):
             params.append(f'map_style="{config["map_style"]}"')
-    
+
     # Density map specific
     if chart_type == "density_map":
         if config.get("z"):
             params.append(f'z="{config["z"]}"')
         if config.get("radius"):
             params.append(f'radius={config["radius"]}')
-    
+
     # Common optional parameters
     if config.get("by"):
         by_val = config["by"]
         if isinstance(by_val, list):
-            params.append(f'by={_format_value(by_val)}')
+            params.append(f"by={_format_value(by_val)}")
         else:
             params.append(f'by="{by_val}"')
-    
+
     if config.get("color"):
         params.append(f'color="{config["color"]}"')
-    
+
     if config.get("size"):
         params.append(f'size="{config["size"]}"')
-    
+
     if config.get("symbol"):
         params.append(f'symbol="{config["symbol"]}"')
-    
+
     # Text and hover options (scatter/line)
     if chart_type in ("scatter", "line"):
         if config.get("text"):
             params.append(f'text="{config["text"]}"')
         if config.get("hover_name"):
             params.append(f'hover_name="{config["hover_name"]}"')
-    
+
     # Line-specific options
     if chart_type == "line":
         if config.get("markers"):
@@ -1025,7 +1067,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'line_dash="{config["line_dash"]}"')
         if config.get("width"):
             params.append(f'width="{config["width"]}"')
-    
+
     # Scatter-specific options
     if chart_type == "scatter":
         if config.get("opacity") is not None and config["opacity"] != 1.0:
@@ -1034,7 +1076,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'marginal_x="{config["marginal_x"]}"')
         if config.get("marginal_y"):
             params.append(f'marginal_y="{config["marginal_y"]}"')
-    
+
     # Error bars (scatter/line)
     if chart_type in ("scatter", "line"):
         if config.get("error_x"):
@@ -1045,7 +1087,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'error_y="{config["error_y"]}"')
         if config.get("error_y_minus"):
             params.append(f'error_y_minus="{config["error_y_minus"]}"')
-    
+
     # Axis configuration (scatter/line)
     if chart_type in ("scatter", "line"):
         if config.get("log_x"):
@@ -1060,33 +1102,33 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'xaxis_titles={_format_value(config["xaxis_titles"])}')
         if config.get("yaxis_titles"):
             params.append(f'yaxis_titles={_format_value(config["yaxis_titles"])}')
-    
+
     # Labels dict (scatter/line)
     if chart_type in ("scatter", "line"):
         if config.get("labels"):
             params.append(f'labels={_format_value(config["labels"])}')
-    
+
     # Rendering options (scatter/line)
     if chart_type in ("scatter", "line"):
         if config.get("render_mode") and config["render_mode"] != "webgl":
             params.append(f'render_mode="{config["render_mode"]}"')
         if config.get("template"):
             params.append(f'template="{config["template"]}"')
-    
+
     # Bar-specific options
     if chart_type == "bar":
         if config.get("orientation") and config["orientation"] != "v":
             params.append(f'orientation="{config["orientation"]}"')
-    
+
     # Histogram-specific options
     if chart_type == "histogram":
         if config.get("nbins") and config["nbins"] != 10:
             params.append(f'nbins={config["nbins"]}')
-    
+
     # Title (common to all)
     if config.get("title"):
         params.append(f'title="{config["title"]}"')
-    
+
     # Format the function call
     if params:
         params_str = ",\n    ".join(params)
@@ -1096,7 +1138,7 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
         lines.append(")")
     else:
         lines.append(f"chart = dx.{chart_type}(table)")
-    
+
     return "\n".join(lines)
 
 
@@ -1264,176 +1306,219 @@ DATASETS = [
 
 def _create_ohlc_sample() -> Table:
     """Create an OHLC dataset by binning the stocks data into 1-minute intervals.
-    
+
     This follows the approach from the Deephaven plotly-express docs:
     https://deephaven.io/core/plotly/docs/candlestick/
-    
+
     Note: Filtered to DOG symbol since candlestick charts can't aggregate
     multiple symbols with the same timestamp.
     """
     import deephaven.agg as agg
-    
+
     stocks = dx.data.stocks()
-    
+
     # Compute OHLC per symbol for each minute
     # Use nanoseconds for the bin size (1 minute = 60 * 1e9 nanos)
     # Filter to single symbol since candlestick can't handle multiple symbols
-    return stocks.update_view(
-        "BinnedTimestamp = lowerBin(Timestamp, 'PT1m')"
-    ).agg_by(
-        [
-            agg.first("Open=Price"),
-            agg.max_("High=Price"),
-            agg.min_("Low=Price"),
-            agg.last("Close=Price"),
-        ],
-        by=["Sym", "BinnedTimestamp"],
-    ).where("Sym == `DOG`")
+    return (
+        stocks.update_view("BinnedTimestamp = lowerBin(Timestamp, 'PT1m')")
+        .agg_by(
+            [
+                agg.first("Open=Price"),
+                agg.max_("High=Price"),
+                agg.min_("Low=Price"),
+                agg.last("Close=Price"),
+            ],
+            by=["Sym", "BinnedTimestamp"],
+        )
+        .where("Sym == `DOG`")
+    )
 
 
 def _create_hierarchy_sample() -> Table:
     """Create a hierarchical dataset for treemap, sunburst, icicle charts.
-    
+
     Creates a product hierarchy: Total -> Category -> Subcategory
     with sales values for each node.
     """
     from deephaven import new_table
     from deephaven.column import string_col, int_col
-    
+
     # Hierarchical data: names, parents (empty string for root), values
     # Structure: Total (root) -> Electronics, Clothing, Food -> specific items
-    return new_table([
-        string_col("Name", [
-            "Total",
-            "Electronics", "Clothing", "Food",
-            "Phones", "Laptops", "Tablets",
-            "Shirts", "Pants", "Shoes",
-            "Fruits", "Vegetables", "Dairy"
-        ]),
-        string_col("Parent", [
-            "",  # root has no parent
-            "Total", "Total", "Total",
-            "Electronics", "Electronics", "Electronics",
-            "Clothing", "Clothing", "Clothing",
-            "Food", "Food", "Food"
-        ]),
-        int_col("Sales", [
-            0,  # root value (will be sum of children)
-            0, 0, 0,  # category values (sum of children)
-            500, 400, 300,  # Electronics items
-            200, 250, 150,  # Clothing items
-            100, 80, 120   # Food items
-        ]),
-    ])
+    return new_table(
+        [
+            string_col(
+                "Name",
+                [
+                    "Total",
+                    "Electronics",
+                    "Clothing",
+                    "Food",
+                    "Phones",
+                    "Laptops",
+                    "Tablets",
+                    "Shirts",
+                    "Pants",
+                    "Shoes",
+                    "Fruits",
+                    "Vegetables",
+                    "Dairy",
+                ],
+            ),
+            string_col(
+                "Parent",
+                [
+                    "",  # root has no parent
+                    "Total",
+                    "Total",
+                    "Total",
+                    "Electronics",
+                    "Electronics",
+                    "Electronics",
+                    "Clothing",
+                    "Clothing",
+                    "Clothing",
+                    "Food",
+                    "Food",
+                    "Food",
+                ],
+            ),
+            int_col(
+                "Sales",
+                [
+                    0,  # root value (will be sum of children)
+                    0,
+                    0,
+                    0,  # category values (sum of children)
+                    500,
+                    400,
+                    300,  # Electronics items
+                    200,
+                    250,
+                    150,  # Clothing items
+                    100,
+                    80,
+                    120,  # Food items
+                ],
+            ),
+        ]
+    )
 
 
 def _create_funnel_sample() -> Table:
     """Create a funnel dataset for funnel and funnel_area charts.
-    
+
     Creates a sales funnel with stages from awareness to purchase.
     """
     from deephaven import new_table
     from deephaven.column import string_col, int_col
-    
-    return new_table([
-        string_col("Stage", [
-            "Website Visits",
-            "Downloads",
-            "Signups",
-            "Free Trials",
-            "Purchases"
-        ]),
-        int_col("Count", [10000, 5000, 2500, 1000, 500]),
-    ])
+
+    return new_table(
+        [
+            string_col(
+                "Stage",
+                ["Website Visits", "Downloads", "Signups", "Free Trials", "Purchases"],
+            ),
+            int_col("Count", [10000, 5000, 2500, 1000, 500]),
+        ]
+    )
 
 
 def _create_scatter_3d_sample() -> Table:
     """Create a 3D scatter dataset.
-    
+
     Creates random 3D points with categories for demonstrating 3D scatter/line.
     """
     from deephaven import new_table
     from deephaven.column import string_col, double_col
     import random
-    
+
     # Generate random 3D points with categories
     n_points = 100
     random.seed(42)
-    
+
     x_vals = [random.gauss(0, 1) for _ in range(n_points)]
     y_vals = [random.gauss(0, 1) for _ in range(n_points)]
     z_vals = [random.gauss(0, 1) for _ in range(n_points)]
     categories = [random.choice(["A", "B", "C"]) for _ in range(n_points)]
     sizes = [random.uniform(5, 20) for _ in range(n_points)]
-    
-    return new_table([
-        double_col("X", x_vals),
-        double_col("Y", y_vals),
-        double_col("Z", z_vals),
-        string_col("Category", categories),
-        double_col("Size", sizes),
-    ])
+
+    return new_table(
+        [
+            double_col("X", x_vals),
+            double_col("Y", y_vals),
+            double_col("Z", z_vals),
+            string_col("Category", categories),
+            double_col("Size", sizes),
+        ]
+    )
 
 
 def _create_polar_sample() -> Table:
     """Create a polar coordinate dataset.
-    
+
     Creates wind-like data with radius (speed) and theta (direction) values.
     """
     from deephaven import new_table
     from deephaven.column import string_col, double_col, int_col
     import random
     import math
-    
+
     # Generate wind-like polar data
     n_points = 72
     random.seed(42)
-    
+
     # Directions from 0 to 360 degrees
     theta_vals = [i * 5 for i in range(n_points)]  # 0, 5, 10, ..., 355
     r_vals = [5 + random.gauss(3, 1.5) for _ in range(n_points)]  # Wind speeds
-    directions = [["N", "NE", "E", "SE", "S", "SW", "W", "NW"][int((t + 22.5) // 45) % 8] for t in theta_vals]
-    
-    return new_table([
-        double_col("R", r_vals),
-        int_col("Theta", theta_vals),
-        string_col("Direction", directions),
-    ])
+    directions = [
+        ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][int((t + 22.5) // 45) % 8]
+        for t in theta_vals
+    ]
+
+    return new_table(
+        [
+            double_col("R", r_vals),
+            int_col("Theta", theta_vals),
+            string_col("Direction", directions),
+        ]
+    )
 
 
 def _create_ternary_sample() -> Table:
     """Create a ternary coordinate dataset.
-    
+
     Creates composition data (e.g., soil types) where a + b + c = 1.
     """
     from deephaven import new_table
     from deephaven.column import string_col, double_col
     import random
-    
+
     # Generate composition data (proportions that sum to 1)
     n_points = 50
     random.seed(42)
-    
+
     a_vals = []
     b_vals = []
     c_vals = []
     types = []
-    
+
     for _ in range(n_points):
         # Generate random proportions that sum to 1
         raw_a = random.random()
         raw_b = random.random()
         raw_c = random.random()
         total = raw_a + raw_b + raw_c
-        
+
         a = raw_a / total
         b = raw_b / total
         c = raw_c / total
-        
+
         a_vals.append(a)
         b_vals.append(b)
         c_vals.append(c)
-        
+
         # Classify based on dominant component
         if a > 0.5:
             types.append("Sand")
@@ -1443,24 +1528,26 @@ def _create_ternary_sample() -> Table:
             types.append("Clay")
         else:
             types.append("Loam")
-    
-    return new_table([
-        double_col("Sand", a_vals),
-        double_col("Silt", b_vals),
-        double_col("Clay", c_vals),
-        string_col("SoilType", types),
-    ])
+
+    return new_table(
+        [
+            double_col("Sand", a_vals),
+            double_col("Silt", b_vals),
+            double_col("Clay", c_vals),
+            string_col("SoilType", types),
+        ]
+    )
 
 
 def _create_timeline_sample() -> Table:
     """Create a timeline/Gantt chart dataset.
-    
+
     Creates project tasks with start and end dates.
     """
     from deephaven import new_table
     from deephaven.column import string_col, datetime_col
     from deephaven.time import to_j_instant
-    
+
     # Project timeline data
     tasks = [
         ("Planning", "2024-01-01T00:00:00Z", "2024-01-15T00:00:00Z", "Phase 1"),
@@ -1472,13 +1559,15 @@ def _create_timeline_sample() -> Table:
         ("Training", "2024-03-20T00:00:00Z", "2024-04-10T00:00:00Z", "Phase 3"),
         ("Launch", "2024-04-01T00:00:00Z", "2024-04-15T00:00:00Z", "Phase 3"),
     ]
-    
-    return new_table([
-        string_col("Task", [t[0] for t in tasks]),
-        datetime_col("Start", [to_j_instant(t[1]) for t in tasks]),
-        datetime_col("End", [to_j_instant(t[2]) for t in tasks]),
-        string_col("Phase", [t[3] for t in tasks]),
-    ])
+
+    return new_table(
+        [
+            string_col("Task", [t[0] for t in tasks]),
+            datetime_col("Start", [to_j_instant(t[1]) for t in tasks]),
+            datetime_col("End", [to_j_instant(t[2]) for t in tasks]),
+            string_col("Phase", [t[3] for t in tasks]),
+        ]
+    )
 
 
 def _load_dataset(name: str) -> Table:
@@ -1533,10 +1622,10 @@ def _column_picker_items(columns: list[str], include_none: bool = True) -> list[
 @ui.component
 def chart_builder(table: Table) -> ui.Element:
     """A component for interactively building charts from a table.
-    
+
     Args:
         table: The source data table to create charts from.
-        
+
     Returns:
         A UI element containing the chart builder interface.
     """
@@ -1546,51 +1635,51 @@ def chart_builder(table: Table) -> ui.Element:
     y_col, set_y_col = ui.use_state("")
     by_cols, set_by_cols = ui.use_state([])  # List of group by columns
     title, set_title = ui.use_state("")
-    
+
     # Scatter-specific state
     size_col, set_size_col = ui.use_state("")
     symbol_col, set_symbol_col = ui.use_state("")
     color_col, set_color_col = ui.use_state("")
-    
+
     # Line-specific state
     markers, set_markers = ui.use_state(False)
     line_shape, set_line_shape = ui.use_state("linear")
-    
+
     # Bar-specific state
     orientation, set_orientation = ui.use_state("v")
-    
+
     # Pie-specific state
     names_col, set_names_col = ui.use_state("")
     values_col, set_values_col = ui.use_state("")
-    
+
     # Histogram-specific state
     nbins, set_nbins = ui.use_state(10)
-    
+
     # OHLC/Candlestick-specific state
     open_col, set_open_col = ui.use_state("")
     high_col, set_high_col = ui.use_state("")
     low_col, set_low_col = ui.use_state("")
     close_col, set_close_col = ui.use_state("")
-    
+
     # Hierarchical chart state (treemap, sunburst, icicle)
     parents_col, set_parents_col = ui.use_state("")
-    
+
     # 3D chart state
     z_col, set_z_col = ui.use_state("")
-    
+
     # Polar chart state
     r_col, set_r_col = ui.use_state("")
     theta_col, set_theta_col = ui.use_state("")
-    
+
     # Ternary chart state
     a_col, set_a_col = ui.use_state("")
     b_col, set_b_col = ui.use_state("")
     c_col, set_c_col = ui.use_state("")
-    
+
     # Timeline chart state
     x_start_col, set_x_start_col = ui.use_state("")
     x_end_col, set_x_end_col = ui.use_state("")
-    
+
     # Map/Geo chart state
     lat_col, set_lat_col = ui.use_state("")
     lon_col, set_lon_col = ui.use_state("")
@@ -1602,7 +1691,7 @@ def chart_builder(table: Table) -> ui.Element:
     center_lat, set_center_lat = ui.use_state(0.0)
     center_lon, set_center_lon = ui.use_state(0.0)
     map_style, set_map_style = ui.use_state("")
-    
+
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
         """Update a group by column at a specific index."""
@@ -1617,26 +1706,26 @@ def chart_builder(table: Table) -> ui.Element:
         else:
             # Add new column
             set_by_cols([*by_cols, col])
-    
+
     def remove_by_col(index: int):
         """Remove a group by column at a specific index."""
-        set_by_cols(by_cols[:index] + by_cols[index + 1:])
-    
+        set_by_cols(by_cols[:index] + by_cols[index + 1 :])
+
     # Get column names from table
     columns = _get_column_names(table)
     column_items = _column_picker_items(columns, include_none=False)
     optional_column_items = _column_picker_items(columns, include_none=True)
-    
+
     # Available columns for group by at each position (exclude already selected except current)
     def get_by_picker_items(index: int) -> list[dict]:
         """Get picker items for a group by dropdown, excluding already selected columns."""
         selected_at_other_indices = [c for i, c in enumerate(by_cols) if i != index]
         available = [c for c in columns if c not in selected_at_other_indices]
         return _column_picker_items(available, include_none=True)
-    
+
     # Build configuration from state
     config: ChartConfig = {"chart_type": chart_type}
-    
+
     # X/Y charts (scatter, line, bar, area)
     if chart_type in ("scatter", "line", "bar", "area"):
         if x_col:
@@ -1646,14 +1735,14 @@ def chart_builder(table: Table) -> ui.Element:
         if by_cols:
             # Pass single string if one column, list if multiple
             config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
-    
+
     # Pie chart uses names/values
     if chart_type == "pie":
         if names_col:
             config["names"] = names_col
         if values_col:
             config["values"] = values_col
-    
+
     # Histogram config
     if chart_type == "histogram":
         if x_col:
@@ -1664,7 +1753,7 @@ def chart_builder(table: Table) -> ui.Element:
             config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
         if nbins:
             config["nbins"] = nbins
-    
+
     # Box, violin, strip, density_heatmap config
     if chart_type in ("box", "violin", "strip", "density_heatmap"):
         if x_col:
@@ -1674,7 +1763,7 @@ def chart_builder(table: Table) -> ui.Element:
         # Group by for box, violin, strip (not density_heatmap)
         if chart_type in ("box", "violin", "strip") and by_cols:
             config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
-    
+
     # Candlestick/OHLC config
     if chart_type in ("candlestick", "ohlc"):
         if x_col:
@@ -1687,10 +1776,10 @@ def chart_builder(table: Table) -> ui.Element:
             config["low"] = low_col
         if close_col:
             config["close"] = close_col
-    
+
     if title:
         config["title"] = title
-    
+
     # Add chart-type-specific options
     if chart_type == "scatter":
         if size_col:
@@ -1706,7 +1795,7 @@ def chart_builder(table: Table) -> ui.Element:
     elif chart_type == "bar":
         if orientation:
             config["orientation"] = orientation
-    
+
     # Hierarchical chart config (treemap, sunburst, icicle)
     if chart_type in ("treemap", "sunburst", "icicle"):
         if names_col:
@@ -1715,21 +1804,21 @@ def chart_builder(table: Table) -> ui.Element:
             config["values"] = values_col
         if parents_col:
             config["parents"] = parents_col
-    
+
     # Funnel chart config
     if chart_type == "funnel":
         if x_col:
             config["x"] = x_col
         if y_col:
             config["y"] = y_col
-    
+
     # Funnel area chart config
     if chart_type == "funnel_area":
         if names_col:
             config["names"] = names_col
         if values_col:
             config["values"] = values_col
-    
+
     # 3D chart config (scatter_3d, line_3d)
     if chart_type in ("scatter_3d", "line_3d"):
         if x_col:
@@ -1745,7 +1834,7 @@ def chart_builder(table: Table) -> ui.Element:
                 config["size"] = size_col
             if color_col:
                 config["color"] = color_col
-    
+
     # Polar chart config (scatter_polar, line_polar)
     if chart_type in ("scatter_polar", "line_polar"):
         if r_col:
@@ -1759,7 +1848,7 @@ def chart_builder(table: Table) -> ui.Element:
                 config["size"] = size_col
             if color_col:
                 config["color"] = color_col
-    
+
     # Ternary chart config (scatter_ternary, line_ternary)
     if chart_type in ("scatter_ternary", "line_ternary"):
         if a_col:
@@ -1775,7 +1864,7 @@ def chart_builder(table: Table) -> ui.Element:
                 config["size"] = size_col
             if color_col:
                 config["color"] = color_col
-    
+
     # Timeline chart config
     if chart_type == "timeline":
         if x_start_col:
@@ -1786,7 +1875,7 @@ def chart_builder(table: Table) -> ui.Element:
             config["y"] = y_col
         if by_cols:
             config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
-    
+
     # Map/Geo chart config (scatter_geo, line_geo)
     if chart_type in ("scatter_geo", "line_geo"):
         if lat_col:
@@ -1807,7 +1896,7 @@ def chart_builder(table: Table) -> ui.Element:
         elif chart_type == "line_geo":
             if color_col:
                 config["color"] = color_col
-    
+
     # Tile-based map chart config (scatter_map, line_map, density_map)
     if chart_type in ("scatter_map", "line_map", "density_map"):
         if lat_col:
@@ -1842,7 +1931,7 @@ def chart_builder(table: Table) -> ui.Element:
                 config["z"] = z_col
             if radius:
                 config["radius"] = radius
-    
+
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -1854,7 +1943,9 @@ def chart_builder(table: Table) -> ui.Element:
     elif chart_type in ("box", "violin", "strip", "density_heatmap"):
         can_create_chart = bool(x_col and y_col)
     elif chart_type in ("candlestick", "ohlc"):
-        can_create_chart = bool(x_col and open_col and high_col and low_col and close_col)
+        can_create_chart = bool(
+            x_col and open_col and high_col and low_col and close_col
+        )
     elif chart_type in ("treemap", "sunburst", "icicle"):
         can_create_chart = bool(names_col and values_col and parents_col)
     elif chart_type == "funnel":
@@ -1873,591 +1964,874 @@ def chart_builder(table: Table) -> ui.Element:
         can_create_chart = bool((lat_col and lon_col) or locations_col)
     elif chart_type in ("scatter_map", "line_map", "density_map"):
         can_create_chart = bool(lat_col and lon_col)
-    
+
     # Create chart if we have valid configuration
     chart = None
     error_message = None
-    
+
     if can_create_chart:
         try:
             chart = make_chart(table, config)
         except Exception as e:
             error_message = str(e)
-    
+
     # Controls panel - compact sidebar
     controls = ui.view(
         ui.flex(
             # Chart type with icons
             ui.picker(
-                *[ui.item(
-                    ui.icon(ct["icon"]),
-                    ct["label"],
-                    key=ct["key"],
-                    text_value=ct["label"],
-                ) for ct in CHART_TYPES],
+                *[
+                    ui.item(
+                        ui.icon(ct["icon"]),
+                        ct["label"],
+                        key=ct["key"],
+                        text_value=ct["label"],
+                    )
+                    for ct in CHART_TYPES
+                ],
                 label="Chart Type",
                 selected_key=chart_type,
                 on_selection_change=set_chart_type,
                 width="100%",
             ),
-            
             # X and Y columns side by side (for scatter, line, bar, area, box, violin, strip, density_heatmap)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="X",
-                    selected_key=x_col,
-                    on_selection_change=set_x_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter", "line", "bar", "area", "box", "violin", "strip", "density_heatmap") else None,
-            
-            # X and/or Y for histogram (only one required)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="X",
-                    selected_key=x_col,
-                    on_selection_change=set_x_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "histogram" else None,
-            
-            # X column for candlestick/ohlc (usually timestamp/date)
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                label="X (Date/Time)",
-                selected_key=x_col,
-                on_selection_change=set_x_col,
-                width="100%",
-            ) if chart_type in ("candlestick", "ohlc") else None,
-            
-            # OHLC columns for candlestick/ohlc
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Open",
-                    selected_key=open_col,
-                    on_selection_change=set_open_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="High",
-                    selected_key=high_col,
-                    on_selection_change=set_high_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("candlestick", "ohlc") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Low",
-                    selected_key=low_col,
-                    on_selection_change=set_low_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Close",
-                    selected_key=close_col,
-                    on_selection_change=set_close_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("candlestick", "ohlc") else None,
-            
-            # Names and Values columns (for pie)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Names",
-                    selected_key=names_col,
-                    on_selection_change=set_names_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Values",
-                    selected_key=values_col,
-                    on_selection_change=set_values_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "pie" else None,
-            
-            # Names, Values, and Parents columns (for treemap, sunburst, icicle)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Names",
-                    selected_key=names_col,
-                    on_selection_change=set_names_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Values",
-                    selected_key=values_col,
-                    on_selection_change=set_values_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("treemap", "sunburst", "icicle") else None,
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                label="Parents",
-                selected_key=parents_col,
-                on_selection_change=set_parents_col,
-                width="100%",
-            ) if chart_type in ("treemap", "sunburst", "icicle") else None,
-            
-            # Names and Values columns (for funnel_area)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Names",
-                    selected_key=names_col,
-                    on_selection_change=set_names_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Values",
-                    selected_key=values_col,
-                    on_selection_change=set_values_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "funnel_area" else None,
-            
-            # X and Y columns (for funnel)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="X",
-                    selected_key=x_col,
-                    on_selection_change=set_x_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "funnel" else None,
-            
-            # X, Y, Z columns (for 3D charts)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="X",
-                    selected_key=x_col,
-                    on_selection_change=set_x_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Z",
-                    selected_key=z_col,
-                    on_selection_change=set_z_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_3d", "line_3d") else None,
-            
-            # R and Theta columns (for polar charts)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="R (radius)",
-                    selected_key=r_col,
-                    on_selection_change=set_r_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Theta (angle)",
-                    selected_key=theta_col,
-                    on_selection_change=set_theta_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_polar", "line_polar") else None,
-            
-            # A, B, C columns (for ternary charts)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="A",
-                    selected_key=a_col,
-                    on_selection_change=set_a_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="B",
-                    selected_key=b_col,
-                    on_selection_change=set_b_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="C",
-                    selected_key=c_col,
-                    on_selection_change=set_c_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_ternary", "line_ternary") else None,
-            
-            # X Start, X End, Y columns (for timeline)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Start",
-                    selected_key=x_start_col,
-                    on_selection_change=set_x_start_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="End",
-                    selected_key=x_end_col,
-                    on_selection_change=set_x_end_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "timeline" else None,
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                label="Y (Task/Label)",
-                selected_key=y_col,
-                on_selection_change=set_y_col,
-                width="100%",
-            ) if chart_type == "timeline" else None,
-            
-            # Geo chart controls (scatter_geo, line_geo)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Lat",
-                    selected_key=lat_col,
-                    on_selection_change=set_lat_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Lon",
-                    selected_key=lon_col,
-                    on_selection_change=set_lon_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_geo", "line_geo") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Locations",
-                    selected_key=locations_col,
-                    on_selection_change=set_locations_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    ui.item("(None)", key=""),
-                    ui.item("ISO-3", key="ISO-3"),
-                    ui.item("USA-states", key="USA-states"),
-                    ui.item("Country names", key="country names"),
-                    label="Location Mode",
-                    selected_key=locationmode,
-                    on_selection_change=set_locationmode,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_geo", "line_geo") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "scatter_geo" else None,
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Color",
-                selected_key=color_col,
-                on_selection_change=set_color_col,
-                width="100%",
-            ) if chart_type == "line_geo" else None,
-            
-            # Tile map chart controls (scatter_map, line_map, density_map)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Lat",
-                    selected_key=lat_col,
-                    on_selection_change=set_lat_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Lon",
-                    selected_key=lon_col,
-                    on_selection_change=set_lon_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "scatter_map" else None,
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Color",
-                selected_key=color_col,
-                on_selection_change=set_color_col,
-                width="100%",
-            ) if chart_type == "line_map" else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Z (Intensity)",
-                    selected_key=z_col,
-                    on_selection_change=set_z_col,
-                    flex_grow=1,
-                ),
-                ui.number_field(
-                    label="Radius",
-                    value=radius,
-                    on_change=set_radius,
-                    min_value=1,
-                    max_value=50,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "density_map" else None,
-            ui.number_field(
-                label="Zoom",
-                value=zoom,
-                on_change=set_zoom,
-                min_value=0,
-                max_value=20,
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
-            # Center selection for tile-based maps
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in MAP_CENTER_PRESETS],
-                label="Map Center",
-                selected_key=center_preset,
-                on_selection_change=set_center_preset,
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
-            # Custom center coordinates (only shown when "custom" is selected)
-            ui.flex(
-                ui.number_field(
-                    label="Center Latitude",
-                    value=center_lat,
-                    on_change=set_center_lat,
-                    min_value=-90,
-                    max_value=90,
-                    flex_grow=1,
-                ),
-                ui.number_field(
-                    label="Center Longitude",
-                    value=center_lon,
-                    on_change=set_center_lon,
-                    min_value=-180,
-                    max_value=180,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") and center_preset == "custom" else None,
-            # Map style selection for tile-based maps
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in MAP_STYLE_OPTIONS],
-                label="Map Style",
-                selected_key=map_style,
-                on_selection_change=set_map_style,
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
-            
-            # Group by (for charts that support it - not pie, density_heatmap, financial, or hierarchical)
-            ui.flex(
-                # Show dropdowns for each selected column plus one empty one
-                *[ui.flex(
+            (
+                ui.flex(
                     ui.picker(
-                        *[ui.item(item["label"], key=item["key"]) for item in get_by_picker_items(i)],
-                        label="Group By" if i == 0 else f"Group {i + 1}",
-                        selected_key=by_cols[i] if i < len(by_cols) else "",
-                        on_selection_change=lambda col, idx=i: update_by_col(idx, col),
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="X",
+                        selected_key=x_col,
+                        on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
-                    # Trash button to remove (only show for selected columns, not the empty "add" picker)
-                    ui.action_button(
-                        ui.icon("vsTrash"),
-                        on_press=(lambda idx: lambda: remove_by_col(idx))(i),
-                        is_quiet=True,
-                        aria_label=f"Remove group {i + 1}",
-                    ) if i < len(by_cols) else None,
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type
+                in (
+                    "scatter",
+                    "line",
+                    "bar",
+                    "area",
+                    "box",
+                    "violin",
+                    "strip",
+                    "density_heatmap",
+                )
+                else None
+            ),
+            # X and/or Y for histogram (only one required)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="X",
+                        selected_key=x_col,
+                        on_selection_change=set_x_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "histogram"
+                else None
+            ),
+            # X column for candlestick/ohlc (usually timestamp/date)
+            (
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X (Date/Time)",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    width="100%",
+                )
+                if chart_type in ("candlestick", "ohlc")
+                else None
+            ),
+            # OHLC columns for candlestick/ohlc
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Open",
+                        selected_key=open_col,
+                        on_selection_change=set_open_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="High",
+                        selected_key=high_col,
+                        on_selection_change=set_high_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("candlestick", "ohlc")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Low",
+                        selected_key=low_col,
+                        on_selection_change=set_low_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Close",
+                        selected_key=close_col,
+                        on_selection_change=set_close_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("candlestick", "ohlc")
+                else None
+            ),
+            # Names and Values columns (for pie)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Names",
+                        selected_key=names_col,
+                        on_selection_change=set_names_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Values",
+                        selected_key=values_col,
+                        on_selection_change=set_values_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "pie"
+                else None
+            ),
+            # Names, Values, and Parents columns (for treemap, sunburst, icicle)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Names",
+                        selected_key=names_col,
+                        on_selection_change=set_names_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Values",
+                        selected_key=values_col,
+                        on_selection_change=set_values_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("treemap", "sunburst", "icicle")
+                else None
+            ),
+            (
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Parents",
+                    selected_key=parents_col,
+                    on_selection_change=set_parents_col,
+                    width="100%",
+                )
+                if chart_type in ("treemap", "sunburst", "icicle")
+                else None
+            ),
+            # Names and Values columns (for funnel_area)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Names",
+                        selected_key=names_col,
+                        on_selection_change=set_names_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Values",
+                        selected_key=values_col,
+                        on_selection_change=set_values_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "funnel_area"
+                else None
+            ),
+            # X and Y columns (for funnel)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="X",
+                        selected_key=x_col,
+                        on_selection_change=set_x_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "funnel"
+                else None
+            ),
+            # X, Y, Z columns (for 3D charts)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="X",
+                        selected_key=x_col,
+                        on_selection_change=set_x_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Z",
+                        selected_key=z_col,
+                        on_selection_change=set_z_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_3d", "line_3d")
+                else None
+            ),
+            # R and Theta columns (for polar charts)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="R (radius)",
+                        selected_key=r_col,
+                        on_selection_change=set_r_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Theta (angle)",
+                        selected_key=theta_col,
+                        on_selection_change=set_theta_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_polar", "line_polar")
+                else None
+            ),
+            # A, B, C columns (for ternary charts)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="A",
+                        selected_key=a_col,
+                        on_selection_change=set_a_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="B",
+                        selected_key=b_col,
+                        on_selection_change=set_b_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="C",
+                        selected_key=c_col,
+                        on_selection_change=set_c_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_ternary", "line_ternary")
+                else None
+            ),
+            # X Start, X End, Y columns (for timeline)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Start",
+                        selected_key=x_start_col,
+                        on_selection_change=set_x_start_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="End",
+                        selected_key=x_end_col,
+                        on_selection_change=set_x_end_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "timeline"
+                else None
+            ),
+            (
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Y (Task/Label)",
+                    selected_key=y_col,
+                    on_selection_change=set_y_col,
+                    width="100%",
+                )
+                if chart_type == "timeline"
+                else None
+            ),
+            # Geo chart controls (scatter_geo, line_geo)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Lat",
+                        selected_key=lat_col,
+                        on_selection_change=set_lat_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Lon",
+                        selected_key=lon_col,
+                        on_selection_change=set_lon_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_geo", "line_geo")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Locations",
+                        selected_key=locations_col,
+                        on_selection_change=set_locations_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        ui.item("(None)", key=""),
+                        ui.item("ISO-3", key="ISO-3"),
+                        ui.item("USA-states", key="USA-states"),
+                        ui.item("Country names", key="country names"),
+                        label="Location Mode",
+                        selected_key=locationmode,
+                        on_selection_change=set_locationmode,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_geo", "line_geo")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "scatter_geo"
+                else None
+            ),
+            (
+                ui.picker(
+                    *[
+                        ui.item(item["label"], key=item["key"])
+                        for item in optional_column_items
+                    ],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    width="100%",
+                )
+                if chart_type == "line_geo"
+                else None
+            ),
+            # Tile map chart controls (scatter_map, line_map, density_map)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Lat",
+                        selected_key=lat_col,
+                        on_selection_change=set_lat_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Lon",
+                        selected_key=lon_col,
+                        on_selection_change=set_lon_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "scatter_map"
+                else None
+            ),
+            (
+                ui.picker(
+                    *[
+                        ui.item(item["label"], key=item["key"])
+                        for item in optional_column_items
+                    ],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    width="100%",
+                )
+                if chart_type == "line_map"
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Z (Intensity)",
+                        selected_key=z_col,
+                        on_selection_change=set_z_col,
+                        flex_grow=1,
+                    ),
+                    ui.number_field(
+                        label="Radius",
+                        value=radius,
+                        on_change=set_radius,
+                        min_value=1,
+                        max_value=50,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "density_map"
+                else None
+            ),
+            (
+                ui.number_field(
+                    label="Zoom",
+                    value=zoom,
+                    on_change=set_zoom,
+                    min_value=0,
+                    max_value=20,
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            # Center selection for tile-based maps
+            (
+                ui.picker(
+                    *[
+                        ui.item(item["label"], key=item["key"])
+                        for item in MAP_CENTER_PRESETS
+                    ],
+                    label="Map Center",
+                    selected_key=center_preset,
+                    on_selection_change=set_center_preset,
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            # Custom center coordinates (only shown when "custom" is selected)
+            (
+                ui.flex(
+                    ui.number_field(
+                        label="Center Latitude",
+                        value=center_lat,
+                        on_change=set_center_lat,
+                        min_value=-90,
+                        max_value=90,
+                        flex_grow=1,
+                    ),
+                    ui.number_field(
+                        label="Center Longitude",
+                        value=center_lon,
+                        on_change=set_center_lon,
+                        min_value=-180,
+                        max_value=180,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                and center_preset == "custom"
+                else None
+            ),
+            # Map style selection for tile-based maps
+            (
+                ui.picker(
+                    *[
+                        ui.item(item["label"], key=item["key"])
+                        for item in MAP_STYLE_OPTIONS
+                    ],
+                    label="Map Style",
+                    selected_key=map_style,
+                    on_selection_change=set_map_style,
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            # Group by (for charts that support it - not pie, density_heatmap, financial, or hierarchical)
+            (
+                ui.flex(
+                    # Show dropdowns for each selected column plus one empty one
+                    *[
+                        ui.flex(
+                            ui.picker(
+                                *[
+                                    ui.item(item["label"], key=item["key"])
+                                    for item in get_by_picker_items(i)
+                                ],
+                                label="Group By" if i == 0 else f"Group {i + 1}",
+                                selected_key=by_cols[i] if i < len(by_cols) else "",
+                                on_selection_change=lambda col, idx=i: update_by_col(
+                                    idx, col
+                                ),
+                                flex_grow=1,
+                            ),
+                            # Trash button to remove (only show for selected columns, not the empty "add" picker)
+                            (
+                                ui.action_button(
+                                    ui.icon("vsTrash"),
+                                    on_press=(lambda idx: lambda: remove_by_col(idx))(
+                                        i
+                                    ),
+                                    is_quiet=True,
+                                    aria_label=f"Remove group {i + 1}",
+                                )
+                                if i < len(by_cols)
+                                else None
+                            ),
+                            direction="row",
+                            gap="size-100",
+                            align_items="end",
+                            width="100%",
+                        )
+                        for i in range(len(by_cols) + 1)
+                    ],  # +1 for the "add new" picker
+                    direction="column",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type
+                not in (
+                    "pie",
+                    "density_heatmap",
+                    "candlestick",
+                    "ohlc",
+                    "treemap",
+                    "sunburst",
+                    "icicle",
+                    "funnel",
+                    "funnel_area",
+                    "scatter_polar",
+                    "line_polar",
+                    "scatter_ternary",
+                    "line_ternary",
+                    "timeline",
+                    "scatter_geo",
+                    "line_geo",
+                    "scatter_map",
+                    "line_map",
+                    "density_map",
+                )
+                else None
+            ),
+            # Histogram-specific options
+            (
+                ui.number_field(
+                    label="Number of Bins",
+                    value=nbins,
+                    on_change=set_nbins,
+                    min_value=1,
+                    max_value=1000,
+                    width="100%",
+                )
+                if chart_type == "histogram"
+                else None
+            ),
+            # Scatter-specific options
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "scatter"
+                else None
+            ),
+            # Line-specific options
+            (
+                ui.flex(
+                    ui.checkbox(
+                        "Markers",
+                        is_selected=markers,
+                        on_change=set_markers,
+                    ),
+                    ui.picker(
+                        *[ui.item(ls["label"], key=ls["key"]) for ls in LINE_SHAPES],
+                        label="Line Shape",
+                        selected_key=line_shape,
+                        on_selection_change=set_line_shape,
+                        flex_grow=1,
+                    ),
                     direction="row",
                     gap="size-100",
                     align_items="end",
                     width="100%",
-                ) for i in range(len(by_cols) + 1)],  # +1 for the "add new" picker
-                direction="column",
-                gap="size-100",
-                width="100%",
-            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline", "scatter_geo", "line_geo", "scatter_map", "line_map", "density_map") else None,
-            
-            # Histogram-specific options
-            ui.number_field(
-                label="Number of Bins",
-                value=nbins,
-                on_change=set_nbins,
-                min_value=1,
-                max_value=1000,
-                width="100%",
-            ) if chart_type == "histogram" else None,
-            
-            # Scatter-specific options
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "scatter" else None,
-            
-            # Line-specific options
-            ui.flex(
-                ui.checkbox(
-                    "Markers",
-                    is_selected=markers,
-                    on_change=set_markers,
-                ),
-                ui.picker(
-                    *[ui.item(ls["label"], key=ls["key"]) for ls in LINE_SHAPES],
-                    label="Line Shape",
-                    selected_key=line_shape,
-                    on_selection_change=set_line_shape,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                align_items="end",
-                width="100%",
-            ) if chart_type == "line" else None,
-            
+                )
+                if chart_type == "line"
+                else None
+            ),
             # Bar-specific options
-            ui.picker(
-                *[ui.item(o["label"], key=o["key"]) for o in ORIENTATIONS],
-                label="Orientation",
-                selected_key=orientation,
-                on_selection_change=set_orientation,
-                width="100%",
-            ) if chart_type == "bar" else None,
-            
+            (
+                ui.picker(
+                    *[ui.item(o["label"], key=o["key"]) for o in ORIENTATIONS],
+                    label="Orientation",
+                    selected_key=orientation,
+                    on_selection_change=set_orientation,
+                    width="100%",
+                )
+                if chart_type == "bar"
+                else None
+            ),
             # Title
             ui.text_field(
                 label="Title",
@@ -2465,7 +2839,6 @@ def chart_builder(table: Table) -> ui.Element:
                 on_change=set_title,
                 width="100%",
             ),
-            
             direction="column",
             gap="size-100",
         ),
@@ -2474,7 +2847,7 @@ def chart_builder(table: Table) -> ui.Element:
         border_radius="medium",
         min_width="size-3000",
     )
-    
+
     # Chart area - update placeholder message based on chart type
     if chart_type == "pie":
         placeholder_msg = "Select Names and Values columns to preview chart"
@@ -2488,20 +2861,32 @@ def chart_builder(table: Table) -> ui.Element:
         placeholder_msg = "Select Lat and Lon columns to preview chart"
     else:
         placeholder_msg = "Select X and Y columns to preview chart"
-    
+
     chart_area = ui.view(
-        ui.text(error_message, UNSAFE_style={"color": "var(--spectrum-negative-color-900)"}) if error_message 
-        else chart if chart 
-        else ui.flex(
-            ui.text(placeholder_msg, UNSAFE_style={"color": "var(--spectrum-gray-600)"}),
-            align_items="center",
-            justify_content="center",
-            height="100%",
+        (
+            ui.text(
+                error_message,
+                UNSAFE_style={"color": "var(--spectrum-negative-color-900)"},
+            )
+            if error_message
+            else (
+                chart
+                if chart
+                else ui.flex(
+                    ui.text(
+                        placeholder_msg,
+                        UNSAFE_style={"color": "var(--spectrum-gray-600)"},
+                    ),
+                    align_items="center",
+                    justify_content="center",
+                    height="100%",
+                )
+            )
         ),
         flex_grow=1,
         min_height="size-3000",
     )
-    
+
     # Main layout - controls on left, chart on right
     return ui.flex(
         controls,
@@ -2515,66 +2900,66 @@ def chart_builder(table: Table) -> ui.Element:
 @ui.component
 def chart_builder_app() -> ui.Element:
     """A complete chart builder app with dataset selection.
-    
+
     Returns:
         A UI element containing the chart builder with dataset selector.
     """
     dataset_name, set_dataset_name = ui.use_state("iris")
-    
+
     # Load the selected dataset
     table = ui.use_memo(lambda: _load_dataset(dataset_name), [dataset_name])
-    
+
     # Chart configuration state
     chart_type, set_chart_type = ui.use_state("scatter")
     x_col, set_x_col = ui.use_state("")
     y_col, set_y_col = ui.use_state("")
     by_cols, set_by_cols = ui.use_state([])  # List of group by columns
     title, set_title = ui.use_state("")
-    
+
     # Scatter-specific state
     size_col, set_size_col = ui.use_state("")
     symbol_col, set_symbol_col = ui.use_state("")
     color_col, set_color_col = ui.use_state("")
-    
+
     # Line-specific state
     markers, set_markers = ui.use_state(False)
     line_shape, set_line_shape = ui.use_state("linear")
-    
+
     # Bar-specific state
     orientation, set_orientation = ui.use_state("v")
-    
+
     # Pie-specific state
     names_col, set_names_col = ui.use_state("")
     values_col, set_values_col = ui.use_state("")
-    
+
     # Histogram-specific state
     nbins, set_nbins = ui.use_state(10)
-    
+
     # OHLC/Candlestick-specific state
     open_col, set_open_col = ui.use_state("")
     high_col, set_high_col = ui.use_state("")
     low_col, set_low_col = ui.use_state("")
     close_col, set_close_col = ui.use_state("")
-    
+
     # Hierarchical chart state
     parents_col, set_parents_col = ui.use_state("")
-    
+
     # 3D chart state
     z_col, set_z_col = ui.use_state("")
-    
+
     # Polar chart state
     r_col, set_r_col = ui.use_state("")
     theta_col, set_theta_col = ui.use_state("")
-    
+
     # Ternary chart state
     a_col, set_a_col = ui.use_state("")
     b_col, set_b_col = ui.use_state("")
     c_col, set_c_col = ui.use_state("")
-    
+
     # Timeline chart state
     x_start_col, set_x_start_col = ui.use_state("")
     x_end_col, set_x_end_col = ui.use_state("")
-    
+
     # Map/Geo chart state
     lat_col, set_lat_col = ui.use_state("")
     lon_col, set_lon_col = ui.use_state("")
@@ -2586,22 +2971,22 @@ def chart_builder_app() -> ui.Element:
     center_lat, set_center_lat = ui.use_state(0.0)
     center_lon, set_center_lon = ui.use_state(0.0)
     map_style, set_map_style = ui.use_state("")
-    
+
     # Advanced options state (Phase 9)
     # Text and hover options
     text_col, set_text_col = ui.use_state("")
     hover_name_col, set_hover_name_col = ui.use_state("")
-    
+
     # Error bars
     error_x_col, set_error_x_col = ui.use_state("")
     error_x_minus_col, set_error_x_minus_col = ui.use_state("")
     error_y_col, set_error_y_col = ui.use_state("")
     error_y_minus_col, set_error_y_minus_col = ui.use_state("")
-    
+
     # Marginal plots (scatter only)
     marginal_x, set_marginal_x = ui.use_state("")
     marginal_y, set_marginal_y = ui.use_state("")
-    
+
     # Axis configuration
     log_x, set_log_x = ui.use_state(False)
     log_y, set_log_y = ui.use_state(False)
@@ -2611,21 +2996,21 @@ def chart_builder_app() -> ui.Element:
     range_y_max, set_range_y_max = ui.use_state(None)
     xaxis_title, set_xaxis_title = ui.use_state("")
     yaxis_title, set_yaxis_title = ui.use_state("")
-    
+
     # Opacity (scatter)
     opacity, set_opacity = ui.use_state(1.0)
-    
+
     # Line-specific advanced options
     line_dash_col, set_line_dash_col = ui.use_state("")
     width_col, set_width_col = ui.use_state("")
-    
+
     # Rendering options
     render_mode, set_render_mode = ui.use_state("webgl")
     template, set_template = ui.use_state("")
-    
+
     # Advanced section expanded state
     advanced_expanded, set_advanced_expanded = ui.use_state(False)
-    
+
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
         """Update a group by column at a specific index."""
@@ -2640,11 +3025,11 @@ def chart_builder_app() -> ui.Element:
         else:
             # Add new column
             set_by_cols([*by_cols, col])
-    
+
     def remove_by_col(index: int):
         """Remove a group by column at a specific index."""
-        set_by_cols(by_cols[:index] + by_cols[index + 1:])
-    
+        set_by_cols(by_cols[:index] + by_cols[index + 1 :])
+
     # Handler to change dataset and reset column selections
     def handle_dataset_change(new_dataset: str):
         set_dataset_name(new_dataset)
@@ -2679,22 +3064,22 @@ def chart_builder_app() -> ui.Element:
         set_center_lat(0.0)
         set_center_lon(0.0)
         set_map_style("")
-    
+
     # Get column names from table
     columns = _get_column_names(table)
     column_items = _column_picker_items(columns, include_none=False)
     optional_column_items = _column_picker_items(columns, include_none=True)
-    
+
     # Available columns for group by at each position (exclude already selected except current)
     def get_by_picker_items(index: int) -> list[dict]:
         """Get picker items for a group by dropdown, excluding already selected columns."""
         selected_at_other_indices = [c for i, c in enumerate(by_cols) if i != index]
         available = [c for c in columns if c not in selected_at_other_indices]
         return _column_picker_items(available, include_none=True)
-    
+
     # Build configuration from state
     config: ChartConfig = {"chart_type": chart_type}
-    
+
     if x_col:
         config["x"] = x_col
     if y_col:
@@ -2704,7 +3089,7 @@ def chart_builder_app() -> ui.Element:
         config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
     if title:
         config["title"] = title
-    
+
     # Add chart-type-specific options
     if chart_type == "scatter":
         if size_col:
@@ -2807,7 +3192,7 @@ def chart_builder_app() -> ui.Element:
     elif chart_type == "histogram":
         if nbins:
             config["nbins"] = nbins
-    
+
     # Candlestick/OHLC config
     if chart_type in ("candlestick", "ohlc"):
         if x_col:
@@ -2820,7 +3205,7 @@ def chart_builder_app() -> ui.Element:
             config["low"] = low_col
         if close_col:
             config["close"] = close_col
-    
+
     # Hierarchical chart config (treemap, sunburst, icicle)
     if chart_type in ("treemap", "sunburst", "icicle"):
         if names_col:
@@ -2829,21 +3214,21 @@ def chart_builder_app() -> ui.Element:
             config["values"] = values_col
         if parents_col:
             config["parents"] = parents_col
-    
+
     # Funnel chart config
     if chart_type == "funnel":
         if x_col:
             config["x"] = x_col
         if y_col:
             config["y"] = y_col
-    
+
     # Funnel area chart config
     if chart_type == "funnel_area":
         if names_col:
             config["names"] = names_col
         if values_col:
             config["values"] = values_col
-    
+
     # 3D chart config (scatter_3d, line_3d)
     if chart_type in ("scatter_3d", "line_3d"):
         if x_col:
@@ -2858,7 +3243,7 @@ def chart_builder_app() -> ui.Element:
             config["size"] = size_col
         if color_col:
             config["color"] = color_col
-    
+
     # Polar chart config (scatter_polar, line_polar)
     if chart_type in ("scatter_polar", "line_polar"):
         if r_col:
@@ -2871,7 +3256,7 @@ def chart_builder_app() -> ui.Element:
             config["size"] = size_col
         if color_col:
             config["color"] = color_col
-    
+
     # Ternary chart config (scatter_ternary, line_ternary)
     if chart_type in ("scatter_ternary", "line_ternary"):
         if a_col:
@@ -2886,7 +3271,7 @@ def chart_builder_app() -> ui.Element:
             config["size"] = size_col
         if color_col:
             config["color"] = color_col
-    
+
     # Timeline chart config
     if chart_type == "timeline":
         if x_start_col:
@@ -2897,7 +3282,7 @@ def chart_builder_app() -> ui.Element:
             config["y"] = y_col
         if by_cols:
             config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
-    
+
     # Map/Geo chart config (scatter_geo, line_geo)
     if chart_type in ("scatter_geo", "line_geo"):
         if lat_col:
@@ -2918,7 +3303,7 @@ def chart_builder_app() -> ui.Element:
         elif chart_type == "line_geo":
             if color_col:
                 config["color"] = color_col
-    
+
     # Tile-based map chart config (scatter_map, line_map, density_map)
     if chart_type in ("scatter_map", "line_map", "density_map"):
         if lat_col:
@@ -2953,7 +3338,7 @@ def chart_builder_app() -> ui.Element:
                 config["z"] = z_col
             if radius:
                 config["radius"] = radius
-    
+
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -2965,7 +3350,9 @@ def chart_builder_app() -> ui.Element:
     elif chart_type in ("box", "violin", "strip", "density_heatmap"):
         can_create_chart = bool(x_col and y_col)
     elif chart_type in ("candlestick", "ohlc"):
-        can_create_chart = bool(x_col and open_col and high_col and low_col and close_col)
+        can_create_chart = bool(
+            x_col and open_col and high_col and low_col and close_col
+        )
     elif chart_type in ("treemap", "sunburst", "icicle"):
         can_create_chart = bool(names_col and values_col and parents_col)
     elif chart_type == "funnel":
@@ -2984,863 +3371,1221 @@ def chart_builder_app() -> ui.Element:
         can_create_chart = bool((lat_col and lon_col) or locations_col)
     elif chart_type in ("scatter_map", "line_map", "density_map"):
         can_create_chart = bool(lat_col and lon_col)
-    
+
     chart = None
     error_message = None
-    
+
     if can_create_chart:
         try:
             chart = make_chart(table, config)
         except Exception as e:
             error_message = str(e)
-    
+
     # Controls panel - compact sidebar
     controls = ui.view(
         ui.flex(
             # Dataset selector with icons and descriptions
             ui.picker(
-                *[ui.item(
-                    ui.icon(ds["icon"]),
-                    ui.text(ds["label"]),
-                    ui.text(ds["description"], slot="description"),
-                    key=ds["key"],
-                    text_value=ds["label"],
-                ) for ds in DATASETS],
+                *[
+                    ui.item(
+                        ui.icon(ds["icon"]),
+                        ui.text(ds["label"]),
+                        ui.text(ds["description"], slot="description"),
+                        key=ds["key"],
+                        text_value=ds["label"],
+                    )
+                    for ds in DATASETS
+                ],
                 label="Dataset",
                 selected_key=dataset_name,
                 on_selection_change=handle_dataset_change,
                 width="100%",
             ),
-            
             # Divider
             ui.divider(),
-            
             # Chart type with icons
             ui.picker(
-                *[ui.item(
-                    ui.icon(ct["icon"]),
-                    ct["label"],
-                    key=ct["key"],
-                    text_value=ct["label"],
-                ) for ct in CHART_TYPES],
+                *[
+                    ui.item(
+                        ui.icon(ct["icon"]),
+                        ct["label"],
+                        key=ct["key"],
+                        text_value=ct["label"],
+                    )
+                    for ct in CHART_TYPES
+                ],
                 label="Chart Type",
                 selected_key=chart_type,
                 on_selection_change=set_chart_type,
                 width="100%",
             ),
-            
             # X and Y columns side by side (for non-pie charts)
             # X and Y columns side by side (for scatter, line, bar, area, box, violin, strip, density_heatmap)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="X",
-                    selected_key=x_col,
-                    on_selection_change=set_x_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter", "line", "bar", "area", "box", "violin", "strip", "density_heatmap") else None,
-            
-            # X and/or Y for histogram (only one required)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="X",
-                    selected_key=x_col,
-                    on_selection_change=set_x_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "histogram" else None,
-            
-            # X column for candlestick/ohlc (usually timestamp/date)
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                label="X (Date/Time)",
-                selected_key=x_col,
-                on_selection_change=set_x_col,
-                width="100%",
-            ) if chart_type in ("candlestick", "ohlc") else None,
-            
-            # OHLC columns for candlestick/ohlc
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Open",
-                    selected_key=open_col,
-                    on_selection_change=set_open_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="High",
-                    selected_key=high_col,
-                    on_selection_change=set_high_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("candlestick", "ohlc") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Low",
-                    selected_key=low_col,
-                    on_selection_change=set_low_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Close",
-                    selected_key=close_col,
-                    on_selection_change=set_close_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("candlestick", "ohlc") else None,
-            
-            # Names and Values columns (for pie charts)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Names",
-                    selected_key=names_col,
-                    on_selection_change=set_names_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Values",
-                    selected_key=values_col,
-                    on_selection_change=set_values_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "pie" else None,
-            
-            # Names, Values, and Parents columns (for treemap, sunburst, icicle)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Names",
-                    selected_key=names_col,
-                    on_selection_change=set_names_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Values",
-                    selected_key=values_col,
-                    on_selection_change=set_values_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("treemap", "sunburst", "icicle") else None,
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                label="Parents",
-                selected_key=parents_col,
-                on_selection_change=set_parents_col,
-                width="100%",
-            ) if chart_type in ("treemap", "sunburst", "icicle") else None,
-            
-            # Names and Values columns (for funnel_area)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Names",
-                    selected_key=names_col,
-                    on_selection_change=set_names_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Values",
-                    selected_key=values_col,
-                    on_selection_change=set_values_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "funnel_area" else None,
-            
-            # X and Y columns (for funnel)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="X",
-                    selected_key=x_col,
-                    on_selection_change=set_x_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "funnel" else None,
-            
-            # 3D chart controls (scatter_3d, line_3d)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="X",
-                    selected_key=x_col,
-                    on_selection_change=set_x_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Z",
-                    selected_key=z_col,
-                    on_selection_change=set_z_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_3d", "line_3d") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_3d", "line_3d") else None,
-            
-            # Polar chart controls (scatter_polar, line_polar)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="R",
-                    selected_key=r_col,
-                    on_selection_change=set_r_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Theta",
-                    selected_key=theta_col,
-                    on_selection_change=set_theta_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_polar", "line_polar") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_polar", "line_polar") else None,
-            
-            # Ternary chart controls (scatter_ternary, line_ternary)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="A",
-                    selected_key=a_col,
-                    on_selection_change=set_a_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="B",
-                    selected_key=b_col,
-                    on_selection_change=set_b_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="C",
-                    selected_key=c_col,
-                    on_selection_change=set_c_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_ternary", "line_ternary") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_ternary", "line_ternary") else None,
-            
-            # Timeline chart controls
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="X Start",
-                    selected_key=x_start_col,
-                    on_selection_change=set_x_start_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="X End",
-                    selected_key=x_end_col,
-                    on_selection_change=set_x_end_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Y",
-                    selected_key=y_col,
-                    on_selection_change=set_y_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "timeline" else None,
-            
-            # Geo chart controls (scatter_geo, line_geo)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Lat",
-                    selected_key=lat_col,
-                    on_selection_change=set_lat_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Lon",
-                    selected_key=lon_col,
-                    on_selection_change=set_lon_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_geo", "line_geo") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Locations",
-                    selected_key=locations_col,
-                    on_selection_change=set_locations_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    ui.item("(None)", key=""),
-                    ui.item("ISO-3", key="ISO-3"),
-                    ui.item("USA-states", key="USA-states"),
-                    ui.item("Country names", key="country names"),
-                    label="Location Mode",
-                    selected_key=locationmode,
-                    on_selection_change=set_locationmode,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_geo", "line_geo") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "scatter_geo" else None,
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Color",
-                selected_key=color_col,
-                on_selection_change=set_color_col,
-                width="100%",
-            ) if chart_type == "line_geo" else None,
-            
-            # Tile map chart controls (scatter_map, line_map, density_map)
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Lat",
-                    selected_key=lat_col,
-                    on_selection_change=set_lat_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
-                    label="Lon",
-                    selected_key=lon_col,
-                    on_selection_change=set_lon_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "scatter_map" else None,
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                label="Color",
-                selected_key=color_col,
-                on_selection_change=set_color_col,
-                width="100%",
-            ) if chart_type == "line_map" else None,
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Z (Intensity)",
-                    selected_key=z_col,
-                    on_selection_change=set_z_col,
-                    flex_grow=1,
-                ),
-                ui.number_field(
-                    label="Radius",
-                    value=radius,
-                    on_change=set_radius,
-                    min_value=1,
-                    max_value=50,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "density_map" else None,
-            ui.number_field(
-                label="Zoom",
-                value=zoom,
-                on_change=set_zoom,
-                min_value=0,
-                max_value=20,
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
-            # Center selection for tile-based maps
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in MAP_CENTER_PRESETS],
-                label="Map Center",
-                selected_key=center_preset,
-                on_selection_change=set_center_preset,
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
-            # Custom center coordinates (only shown when "custom" is selected)
-            ui.flex(
-                ui.number_field(
-                    label="Center Latitude",
-                    value=center_lat,
-                    on_change=set_center_lat,
-                    min_value=-90,
-                    max_value=90,
-                    flex_grow=1,
-                ),
-                ui.number_field(
-                    label="Center Longitude",
-                    value=center_lon,
-                    on_change=set_center_lon,
-                    min_value=-180,
-                    max_value=180,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") and center_preset == "custom" else None,
-            # Map style selection for tile-based maps
-            ui.picker(
-                *[ui.item(item["label"], key=item["key"]) for item in MAP_STYLE_OPTIONS],
-                label="Map Style",
-                selected_key=map_style,
-                on_selection_change=set_map_style,
-                width="100%",
-            ) if chart_type in ("scatter_map", "line_map", "density_map") else None,
-            
-            # Group by (for charts that support it - not pie, density_heatmap, OHLC, or hierarchical charts)
-            ui.flex(
-                # Show dropdowns for each selected column plus one empty one
-                *[ui.flex(
+            (
+                ui.flex(
                     ui.picker(
-                        *[ui.item(item["label"], key=item["key"]) for item in get_by_picker_items(i)],
-                        label="Group By" if i == 0 else f"Group {i + 1}",
-                        selected_key=by_cols[i] if i < len(by_cols) else "",
-                        on_selection_change=lambda col, idx=i: update_by_col(idx, col),
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="X",
+                        selected_key=x_col,
+                        on_selection_change=set_x_col,
                         flex_grow=1,
                     ),
-                    # Trash button to remove (only show for selected columns, not the empty "add" picker)
-                    ui.action_button(
-                        ui.icon("vsTrash"),
-                        on_press=(lambda idx: lambda: remove_by_col(idx))(i),
-                        is_quiet=True,
-                        aria_label=f"Remove group {i + 1}",
-                    ) if i < len(by_cols) else None,
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type
+                in (
+                    "scatter",
+                    "line",
+                    "bar",
+                    "area",
+                    "box",
+                    "violin",
+                    "strip",
+                    "density_heatmap",
+                )
+                else None
+            ),
+            # X and/or Y for histogram (only one required)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="X",
+                        selected_key=x_col,
+                        on_selection_change=set_x_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "histogram"
+                else None
+            ),
+            # X column for candlestick/ohlc (usually timestamp/date)
+            (
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="X (Date/Time)",
+                    selected_key=x_col,
+                    on_selection_change=set_x_col,
+                    width="100%",
+                )
+                if chart_type in ("candlestick", "ohlc")
+                else None
+            ),
+            # OHLC columns for candlestick/ohlc
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Open",
+                        selected_key=open_col,
+                        on_selection_change=set_open_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="High",
+                        selected_key=high_col,
+                        on_selection_change=set_high_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("candlestick", "ohlc")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Low",
+                        selected_key=low_col,
+                        on_selection_change=set_low_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Close",
+                        selected_key=close_col,
+                        on_selection_change=set_close_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("candlestick", "ohlc")
+                else None
+            ),
+            # Names and Values columns (for pie charts)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Names",
+                        selected_key=names_col,
+                        on_selection_change=set_names_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Values",
+                        selected_key=values_col,
+                        on_selection_change=set_values_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "pie"
+                else None
+            ),
+            # Names, Values, and Parents columns (for treemap, sunburst, icicle)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Names",
+                        selected_key=names_col,
+                        on_selection_change=set_names_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Values",
+                        selected_key=values_col,
+                        on_selection_change=set_values_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("treemap", "sunburst", "icicle")
+                else None
+            ),
+            (
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Parents",
+                    selected_key=parents_col,
+                    on_selection_change=set_parents_col,
+                    width="100%",
+                )
+                if chart_type in ("treemap", "sunburst", "icicle")
+                else None
+            ),
+            # Names and Values columns (for funnel_area)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Names",
+                        selected_key=names_col,
+                        on_selection_change=set_names_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Values",
+                        selected_key=values_col,
+                        on_selection_change=set_values_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "funnel_area"
+                else None
+            ),
+            # X and Y columns (for funnel)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="X",
+                        selected_key=x_col,
+                        on_selection_change=set_x_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "funnel"
+                else None
+            ),
+            # 3D chart controls (scatter_3d, line_3d)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="X",
+                        selected_key=x_col,
+                        on_selection_change=set_x_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Z",
+                        selected_key=z_col,
+                        on_selection_change=set_z_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_3d", "line_3d")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_3d", "line_3d")
+                else None
+            ),
+            # Polar chart controls (scatter_polar, line_polar)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="R",
+                        selected_key=r_col,
+                        on_selection_change=set_r_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Theta",
+                        selected_key=theta_col,
+                        on_selection_change=set_theta_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_polar", "line_polar")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_polar", "line_polar")
+                else None
+            ),
+            # Ternary chart controls (scatter_ternary, line_ternary)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="A",
+                        selected_key=a_col,
+                        on_selection_change=set_a_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="B",
+                        selected_key=b_col,
+                        on_selection_change=set_b_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="C",
+                        selected_key=c_col,
+                        on_selection_change=set_c_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_ternary", "line_ternary")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_ternary", "line_ternary")
+                else None
+            ),
+            # Timeline chart controls
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="X Start",
+                        selected_key=x_start_col,
+                        on_selection_change=set_x_start_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="X End",
+                        selected_key=x_end_col,
+                        on_selection_change=set_x_end_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Y",
+                        selected_key=y_col,
+                        on_selection_change=set_y_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "timeline"
+                else None
+            ),
+            # Geo chart controls (scatter_geo, line_geo)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Lat",
+                        selected_key=lat_col,
+                        on_selection_change=set_lat_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Lon",
+                        selected_key=lon_col,
+                        on_selection_change=set_lon_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_geo", "line_geo")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Locations",
+                        selected_key=locations_col,
+                        on_selection_change=set_locations_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        ui.item("(None)", key=""),
+                        ui.item("ISO-3", key="ISO-3"),
+                        ui.item("USA-states", key="USA-states"),
+                        ui.item("Country names", key="country names"),
+                        label="Location Mode",
+                        selected_key=locationmode,
+                        on_selection_change=set_locationmode,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_geo", "line_geo")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "scatter_geo"
+                else None
+            ),
+            (
+                ui.picker(
+                    *[
+                        ui.item(item["label"], key=item["key"])
+                        for item in optional_column_items
+                    ],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    width="100%",
+                )
+                if chart_type == "line_geo"
+                else None
+            ),
+            # Tile map chart controls (scatter_map, line_map, density_map)
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Lat",
+                        selected_key=lat_col,
+                        on_selection_change=set_lat_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in column_items
+                        ],
+                        label="Lon",
+                        selected_key=lon_col,
+                        on_selection_change=set_lon_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "scatter_map"
+                else None
+            ),
+            (
+                ui.picker(
+                    *[
+                        ui.item(item["label"], key=item["key"])
+                        for item in optional_column_items
+                    ],
+                    label="Color",
+                    selected_key=color_col,
+                    on_selection_change=set_color_col,
+                    width="100%",
+                )
+                if chart_type == "line_map"
+                else None
+            ),
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Z (Intensity)",
+                        selected_key=z_col,
+                        on_selection_change=set_z_col,
+                        flex_grow=1,
+                    ),
+                    ui.number_field(
+                        label="Radius",
+                        value=radius,
+                        on_change=set_radius,
+                        min_value=1,
+                        max_value=50,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "density_map"
+                else None
+            ),
+            (
+                ui.number_field(
+                    label="Zoom",
+                    value=zoom,
+                    on_change=set_zoom,
+                    min_value=0,
+                    max_value=20,
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            # Center selection for tile-based maps
+            (
+                ui.picker(
+                    *[
+                        ui.item(item["label"], key=item["key"])
+                        for item in MAP_CENTER_PRESETS
+                    ],
+                    label="Map Center",
+                    selected_key=center_preset,
+                    on_selection_change=set_center_preset,
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            # Custom center coordinates (only shown when "custom" is selected)
+            (
+                ui.flex(
+                    ui.number_field(
+                        label="Center Latitude",
+                        value=center_lat,
+                        on_change=set_center_lat,
+                        min_value=-90,
+                        max_value=90,
+                        flex_grow=1,
+                    ),
+                    ui.number_field(
+                        label="Center Longitude",
+                        value=center_lon,
+                        on_change=set_center_lon,
+                        min_value=-180,
+                        max_value=180,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                and center_preset == "custom"
+                else None
+            ),
+            # Map style selection for tile-based maps
+            (
+                ui.picker(
+                    *[
+                        ui.item(item["label"], key=item["key"])
+                        for item in MAP_STYLE_OPTIONS
+                    ],
+                    label="Map Style",
+                    selected_key=map_style,
+                    on_selection_change=set_map_style,
+                    width="100%",
+                )
+                if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            # Group by (for charts that support it - not pie, density_heatmap, OHLC, or hierarchical charts)
+            (
+                ui.flex(
+                    # Show dropdowns for each selected column plus one empty one
+                    *[
+                        ui.flex(
+                            ui.picker(
+                                *[
+                                    ui.item(item["label"], key=item["key"])
+                                    for item in get_by_picker_items(i)
+                                ],
+                                label="Group By" if i == 0 else f"Group {i + 1}",
+                                selected_key=by_cols[i] if i < len(by_cols) else "",
+                                on_selection_change=lambda col, idx=i: update_by_col(
+                                    idx, col
+                                ),
+                                flex_grow=1,
+                            ),
+                            # Trash button to remove (only show for selected columns, not the empty "add" picker)
+                            (
+                                ui.action_button(
+                                    ui.icon("vsTrash"),
+                                    on_press=(lambda idx: lambda: remove_by_col(idx))(
+                                        i
+                                    ),
+                                    is_quiet=True,
+                                    aria_label=f"Remove group {i + 1}",
+                                )
+                                if i < len(by_cols)
+                                else None
+                            ),
+                            direction="row",
+                            gap="size-100",
+                            align_items="end",
+                            width="100%",
+                        )
+                        for i in range(len(by_cols) + 1)
+                    ],  # +1 for the "add new" picker
+                    direction="column",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type
+                not in (
+                    "pie",
+                    "density_heatmap",
+                    "candlestick",
+                    "ohlc",
+                    "treemap",
+                    "sunburst",
+                    "icicle",
+                    "funnel",
+                    "funnel_area",
+                    "scatter_3d",
+                    "line_3d",
+                    "scatter_polar",
+                    "line_polar",
+                    "scatter_ternary",
+                    "line_ternary",
+                    "timeline",
+                    "scatter_geo",
+                    "line_geo",
+                    "scatter_map",
+                    "line_map",
+                    "density_map",
+                )
+                else None
+            ),
+            # Histogram-specific options
+            (
+                ui.number_field(
+                    label="Number of Bins",
+                    value=nbins,
+                    on_change=set_nbins,
+                    min_value=1,
+                    max_value=1000,
+                    width="100%",
+                )
+                if chart_type == "histogram"
+                else None
+            ),
+            # Scatter-specific options
+            (
+                ui.flex(
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Size",
+                        selected_key=size_col,
+                        on_selection_change=set_size_col,
+                        flex_grow=1,
+                    ),
+                    ui.picker(
+                        *[
+                            ui.item(item["label"], key=item["key"])
+                            for item in optional_column_items
+                        ],
+                        label="Color",
+                        selected_key=color_col,
+                        on_selection_change=set_color_col,
+                        flex_grow=1,
+                    ),
+                    direction="row",
+                    gap="size-100",
+                    width="100%",
+                )
+                if chart_type == "scatter"
+                else None
+            ),
+            # Line-specific options
+            (
+                ui.flex(
+                    ui.checkbox(
+                        "Markers",
+                        is_selected=markers,
+                        on_change=set_markers,
+                    ),
+                    ui.picker(
+                        *[ui.item(ls["label"], key=ls["key"]) for ls in LINE_SHAPES],
+                        label="Line Shape",
+                        selected_key=line_shape,
+                        on_selection_change=set_line_shape,
+                        flex_grow=1,
+                    ),
                     direction="row",
                     gap="size-100",
                     align_items="end",
                     width="100%",
-                ) for i in range(len(by_cols) + 1)],  # +1 for the "add new" picker
-                direction="column",
-                gap="size-100",
-                width="100%",
-            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc", "treemap", "sunburst", "icicle", "funnel", "funnel_area", "scatter_3d", "line_3d", "scatter_polar", "line_polar", "scatter_ternary", "line_ternary", "timeline", "scatter_geo", "line_geo", "scatter_map", "line_map", "density_map") else None,
-            
-            # Histogram-specific options
-            ui.number_field(
-                label="Number of Bins",
-                value=nbins,
-                on_change=set_nbins,
-                min_value=1,
-                max_value=1000,
-                width="100%",
-            ) if chart_type == "histogram" else None,
-            
-            # Scatter-specific options
-            ui.flex(
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Size",
-                    selected_key=size_col,
-                    on_selection_change=set_size_col,
-                    flex_grow=1,
-                ),
-                ui.picker(
-                    *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                    label="Color",
-                    selected_key=color_col,
-                    on_selection_change=set_color_col,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                width="100%",
-            ) if chart_type == "scatter" else None,
-            
-            # Line-specific options
-            ui.flex(
-                ui.checkbox(
-                    "Markers",
-                    is_selected=markers,
-                    on_change=set_markers,
-                ),
-                ui.picker(
-                    *[ui.item(ls["label"], key=ls["key"]) for ls in LINE_SHAPES],
-                    label="Line Shape",
-                    selected_key=line_shape,
-                    on_selection_change=set_line_shape,
-                    flex_grow=1,
-                ),
-                direction="row",
-                gap="size-100",
-                align_items="end",
-                width="100%",
-            ) if chart_type == "line" else None,
-            
+                )
+                if chart_type == "line"
+                else None
+            ),
             # Bar-specific options
-            ui.picker(
-                *[ui.item(o["label"], key=o["key"]) for o in ORIENTATIONS],
-                label="Orientation",
-                selected_key=orientation,
-                on_selection_change=set_orientation,
-                width="100%",
-            ) if chart_type == "bar" else None,
-            
+            (
+                ui.picker(
+                    *[ui.item(o["label"], key=o["key"]) for o in ORIENTATIONS],
+                    label="Orientation",
+                    selected_key=orientation,
+                    on_selection_change=set_orientation,
+                    width="100%",
+                )
+                if chart_type == "bar"
+                else None
+            ),
             # Advanced Options (collapsible) - only for scatter and line
-            ui.disclosure(
-                title="Advanced Options",
-                panel=ui.flex(
-                    # Text and Hover options
-                    ui.flex(
-                        ui.picker(
-                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                            label="Text Labels",
-                            selected_key=text_col,
-                            on_selection_change=set_text_col,
-                            flex_grow=1,
+            (
+                ui.disclosure(
+                    title="Advanced Options",
+                    panel=ui.flex(
+                        # Text and Hover options
+                        ui.flex(
+                            ui.picker(
+                                *[
+                                    ui.item(item["label"], key=item["key"])
+                                    for item in optional_column_items
+                                ],
+                                label="Text Labels",
+                                selected_key=text_col,
+                                on_selection_change=set_text_col,
+                                flex_grow=1,
+                            ),
+                            ui.picker(
+                                *[
+                                    ui.item(item["label"], key=item["key"])
+                                    for item in optional_column_items
+                                ],
+                                label="Hover Name",
+                                selected_key=hover_name_col,
+                                on_selection_change=set_hover_name_col,
+                                flex_grow=1,
+                            ),
+                            direction="row",
+                            gap="size-100",
+                            width="100%",
                         ),
-                        ui.picker(
-                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                            label="Hover Name",
-                            selected_key=hover_name_col,
-                            on_selection_change=set_hover_name_col,
-                            flex_grow=1,
+                        # Opacity (scatter only)
+                        (
+                            ui.slider(
+                                label="Opacity",
+                                value=opacity,
+                                on_change=set_opacity,
+                                min_value=0.0,
+                                max_value=1.0,
+                                step=0.1,
+                                width="100%",
+                            )
+                            if chart_type == "scatter"
+                            else None
                         ),
-                        direction="row",
+                        # Line-specific: line_dash and width columns
+                        (
+                            ui.flex(
+                                ui.picker(
+                                    *[
+                                        ui.item(item["label"], key=item["key"])
+                                        for item in optional_column_items
+                                    ],
+                                    label="Line Dash",
+                                    selected_key=line_dash_col,
+                                    on_selection_change=set_line_dash_col,
+                                    flex_grow=1,
+                                ),
+                                ui.picker(
+                                    *[
+                                        ui.item(item["label"], key=item["key"])
+                                        for item in optional_column_items
+                                    ],
+                                    label="Line Width",
+                                    selected_key=width_col,
+                                    on_selection_change=set_width_col,
+                                    flex_grow=1,
+                                ),
+                                direction="row",
+                                gap="size-100",
+                                width="100%",
+                            )
+                            if chart_type == "line"
+                            else None
+                        ),
+                        # Marginal plots (scatter only)
+                        (
+                            ui.flex(
+                                ui.picker(
+                                    ui.item("(None)", key=""),
+                                    ui.item("Histogram", key="histogram"),
+                                    ui.item("Box", key="box"),
+                                    ui.item("Violin", key="violin"),
+                                    ui.item("Rug", key="rug"),
+                                    label="Marginal X",
+                                    selected_key=marginal_x,
+                                    on_selection_change=set_marginal_x,
+                                    flex_grow=1,
+                                ),
+                                ui.picker(
+                                    ui.item("(None)", key=""),
+                                    ui.item("Histogram", key="histogram"),
+                                    ui.item("Box", key="box"),
+                                    ui.item("Violin", key="violin"),
+                                    ui.item("Rug", key="rug"),
+                                    label="Marginal Y",
+                                    selected_key=marginal_y,
+                                    on_selection_change=set_marginal_y,
+                                    flex_grow=1,
+                                ),
+                                direction="row",
+                                gap="size-100",
+                                width="100%",
+                            )
+                            if chart_type == "scatter"
+                            else None
+                        ),
+                        # Error bars
+                        ui.text(
+                            "Error Bars",
+                            UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"},
+                        ),
+                        ui.flex(
+                            ui.picker(
+                                *[
+                                    ui.item(item["label"], key=item["key"])
+                                    for item in optional_column_items
+                                ],
+                                label="Error X",
+                                selected_key=error_x_col,
+                                on_selection_change=set_error_x_col,
+                                flex_grow=1,
+                            ),
+                            ui.picker(
+                                *[
+                                    ui.item(item["label"], key=item["key"])
+                                    for item in optional_column_items
+                                ],
+                                label="Error X-",
+                                selected_key=error_x_minus_col,
+                                on_selection_change=set_error_x_minus_col,
+                                flex_grow=1,
+                            ),
+                            direction="row",
+                            gap="size-100",
+                            width="100%",
+                        ),
+                        ui.flex(
+                            ui.picker(
+                                *[
+                                    ui.item(item["label"], key=item["key"])
+                                    for item in optional_column_items
+                                ],
+                                label="Error Y",
+                                selected_key=error_y_col,
+                                on_selection_change=set_error_y_col,
+                                flex_grow=1,
+                            ),
+                            ui.picker(
+                                *[
+                                    ui.item(item["label"], key=item["key"])
+                                    for item in optional_column_items
+                                ],
+                                label="Error Y-",
+                                selected_key=error_y_minus_col,
+                                on_selection_change=set_error_y_minus_col,
+                                flex_grow=1,
+                            ),
+                            direction="row",
+                            gap="size-100",
+                            width="100%",
+                        ),
+                        # Axis configuration
+                        ui.text(
+                            "Axis Configuration",
+                            UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"},
+                        ),
+                        ui.flex(
+                            ui.checkbox(
+                                "Log X",
+                                is_selected=log_x,
+                                on_change=set_log_x,
+                            ),
+                            ui.checkbox(
+                                "Log Y",
+                                is_selected=log_y,
+                                on_change=set_log_y,
+                            ),
+                            direction="row",
+                            gap="size-200",
+                        ),
+                        ui.flex(
+                            ui.text_field(
+                                label="X Axis Title",
+                                value=xaxis_title,
+                                on_change=set_xaxis_title,
+                                flex_grow=1,
+                            ),
+                            ui.text_field(
+                                label="Y Axis Title",
+                                value=yaxis_title,
+                                on_change=set_yaxis_title,
+                                flex_grow=1,
+                            ),
+                            direction="row",
+                            gap="size-100",
+                            width="100%",
+                        ),
+                        # Rendering options
+                        ui.text(
+                            "Rendering",
+                            UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"},
+                        ),
+                        ui.flex(
+                            ui.picker(
+                                ui.item("WebGL (faster)", key="webgl"),
+                                ui.item("SVG (more compatible)", key="svg"),
+                                label="Render Mode",
+                                selected_key=render_mode,
+                                on_selection_change=set_render_mode,
+                                flex_grow=1,
+                            ),
+                            ui.picker(
+                                ui.item("(Default)", key=""),
+                                ui.item("plotly", key="plotly"),
+                                ui.item("plotly_white", key="plotly_white"),
+                                ui.item("plotly_dark", key="plotly_dark"),
+                                ui.item("ggplot2", key="ggplot2"),
+                                ui.item("seaborn", key="seaborn"),
+                                ui.item("simple_white", key="simple_white"),
+                                label="Template",
+                                selected_key=template,
+                                on_selection_change=set_template,
+                                flex_grow=1,
+                            ),
+                            direction="row",
+                            gap="size-100",
+                            width="100%",
+                        ),
+                        direction="column",
                         gap="size-100",
-                        width="100%",
                     ),
-                    
-                    # Opacity (scatter only)
-                    ui.slider(
-                        label="Opacity",
-                        value=opacity,
-                        on_change=set_opacity,
-                        min_value=0.0,
-                        max_value=1.0,
-                        step=0.1,
-                        width="100%",
-                    ) if chart_type == "scatter" else None,
-                    
-                    # Line-specific: line_dash and width columns
-                    ui.flex(
-                        ui.picker(
-                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                            label="Line Dash",
-                            selected_key=line_dash_col,
-                            on_selection_change=set_line_dash_col,
-                            flex_grow=1,
-                        ),
-                        ui.picker(
-                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                            label="Line Width",
-                            selected_key=width_col,
-                            on_selection_change=set_width_col,
-                            flex_grow=1,
-                        ),
-                        direction="row",
-                        gap="size-100",
-                        width="100%",
-                    ) if chart_type == "line" else None,
-                    
-                    # Marginal plots (scatter only)
-                    ui.flex(
-                        ui.picker(
-                            ui.item("(None)", key=""),
-                            ui.item("Histogram", key="histogram"),
-                            ui.item("Box", key="box"),
-                            ui.item("Violin", key="violin"),
-                            ui.item("Rug", key="rug"),
-                            label="Marginal X",
-                            selected_key=marginal_x,
-                            on_selection_change=set_marginal_x,
-                            flex_grow=1,
-                        ),
-                        ui.picker(
-                            ui.item("(None)", key=""),
-                            ui.item("Histogram", key="histogram"),
-                            ui.item("Box", key="box"),
-                            ui.item("Violin", key="violin"),
-                            ui.item("Rug", key="rug"),
-                            label="Marginal Y",
-                            selected_key=marginal_y,
-                            on_selection_change=set_marginal_y,
-                            flex_grow=1,
-                        ),
-                        direction="row",
-                        gap="size-100",
-                        width="100%",
-                    ) if chart_type == "scatter" else None,
-                    
-                    # Error bars
-                    ui.text("Error Bars", UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"}),
-                    ui.flex(
-                        ui.picker(
-                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                            label="Error X",
-                            selected_key=error_x_col,
-                            on_selection_change=set_error_x_col,
-                            flex_grow=1,
-                        ),
-                        ui.picker(
-                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                            label="Error X-",
-                            selected_key=error_x_minus_col,
-                            on_selection_change=set_error_x_minus_col,
-                            flex_grow=1,
-                        ),
-                        direction="row",
-                        gap="size-100",
-                        width="100%",
+                    is_expanded=advanced_expanded,
+                    on_expanded_change=lambda: set_advanced_expanded(
+                        not advanced_expanded
                     ),
-                    ui.flex(
-                        ui.picker(
-                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                            label="Error Y",
-                            selected_key=error_y_col,
-                            on_selection_change=set_error_y_col,
-                            flex_grow=1,
-                        ),
-                        ui.picker(
-                            *[ui.item(item["label"], key=item["key"]) for item in optional_column_items],
-                            label="Error Y-",
-                            selected_key=error_y_minus_col,
-                            on_selection_change=set_error_y_minus_col,
-                            flex_grow=1,
-                        ),
-                        direction="row",
-                        gap="size-100",
-                        width="100%",
-                    ),
-                    
-                    # Axis configuration
-                    ui.text("Axis Configuration", UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"}),
-                    ui.flex(
-                        ui.checkbox(
-                            "Log X",
-                            is_selected=log_x,
-                            on_change=set_log_x,
-                        ),
-                        ui.checkbox(
-                            "Log Y",
-                            is_selected=log_y,
-                            on_change=set_log_y,
-                        ),
-                        direction="row",
-                        gap="size-200",
-                    ),
-                    ui.flex(
-                        ui.text_field(
-                            label="X Axis Title",
-                            value=xaxis_title,
-                            on_change=set_xaxis_title,
-                            flex_grow=1,
-                        ),
-                        ui.text_field(
-                            label="Y Axis Title",
-                            value=yaxis_title,
-                            on_change=set_yaxis_title,
-                            flex_grow=1,
-                        ),
-                        direction="row",
-                        gap="size-100",
-                        width="100%",
-                    ),
-                    
-                    # Rendering options
-                    ui.text("Rendering", UNSAFE_style={"fontWeight": "bold", "marginTop": "8px"}),
-                    ui.flex(
-                        ui.picker(
-                            ui.item("WebGL (faster)", key="webgl"),
-                            ui.item("SVG (more compatible)", key="svg"),
-                            label="Render Mode",
-                            selected_key=render_mode,
-                            on_selection_change=set_render_mode,
-                            flex_grow=1,
-                        ),
-                        ui.picker(
-                            ui.item("(Default)", key=""),
-                            ui.item("plotly", key="plotly"),
-                            ui.item("plotly_white", key="plotly_white"),
-                            ui.item("plotly_dark", key="plotly_dark"),
-                            ui.item("ggplot2", key="ggplot2"),
-                            ui.item("seaborn", key="seaborn"),
-                            ui.item("simple_white", key="simple_white"),
-                            label="Template",
-                            selected_key=template,
-                            on_selection_change=set_template,
-                            flex_grow=1,
-                        ),
-                        direction="row",
-                        gap="size-100",
-                        width="100%",
-                    ),
-                    
-                    direction="column",
-                    gap="size-100",
-                ),
-                is_expanded=advanced_expanded,
-                on_expanded_change=lambda: set_advanced_expanded(not advanced_expanded),
-            ) if chart_type in ("scatter", "line") else None,
-            
+                )
+                if chart_type in ("scatter", "line")
+                else None
+            ),
             # Title
             ui.text_field(
                 label="Title",
@@ -3848,7 +4593,6 @@ def chart_builder_app() -> ui.Element:
                 on_change=set_title,
                 width="100%",
             ),
-            
             direction="column",
             gap="size-100",
         ),
@@ -3856,8 +4600,11 @@ def chart_builder_app() -> ui.Element:
         background_color="gray-100",
         border_radius="medium",
         min_width="size-3000",
+        height="100%",
+        min_height=0,
+        overflow="auto",
     )
-    
+
     # Chart area - update placeholder message based on chart type
     if chart_type == "pie":
         placeholder_msg = "Select Names and Values columns to preview chart"
@@ -3883,23 +4630,35 @@ def chart_builder_app() -> ui.Element:
         placeholder_msg = "Select Lat and Lon columns to preview chart"
     else:
         placeholder_msg = "Select X and Y columns to preview chart"
-    
+
     chart_area = ui.view(
-        ui.text(error_message, UNSAFE_style={"color": "var(--spectrum-negative-color-900)"}) if error_message 
-        else chart if chart 
-        else ui.flex(
-            ui.text(placeholder_msg, UNSAFE_style={"color": "var(--spectrum-gray-600)"}),
-            align_items="center",
-            justify_content="center",
-            height="100%",
+        (
+            ui.text(
+                error_message,
+                UNSAFE_style={"color": "var(--spectrum-negative-color-900)"},
+            )
+            if error_message
+            else (
+                chart
+                if chart
+                else ui.flex(
+                    ui.text(
+                        placeholder_msg,
+                        UNSAFE_style={"color": "var(--spectrum-gray-600)"},
+                    ),
+                    align_items="center",
+                    justify_content="center",
+                    height="100%",
+                )
+            )
         ),
         flex_grow=1,
         min_height="size-3000",
     )
-    
+
     # Generate the code for the current configuration
     generated_code = generate_chart_code(config, dataset_name)
-    
+
     # Code panel with markdown display
     code_panel = ui.view(
         ui.flex(
@@ -3918,7 +4677,7 @@ def chart_builder_app() -> ui.Element:
         background_color="gray-100",
         border_radius="medium",
     )
-    
+
     # Right side - chart area and code panel stacked vertically
     right_panel = ui.flex(
         chart_area,
@@ -3926,15 +4685,26 @@ def chart_builder_app() -> ui.Element:
         direction="column",
         gap="size-200",
         flex_grow=1,
+        min_height=0,  # Allow flex item to shrink below content size
     )
-    
+
     # Main layout - controls on left, chart+code on right
-    return ui.flex(
-        controls,
-        right_panel,
-        direction="row",
-        gap="size-200",
-        height="100%",
+    # Wrap in ui.view with position absolute to fill the panel and prevent page scroll
+    return ui.view(
+        ui.flex(
+            controls,
+            right_panel,
+            direction="row",
+            gap="size-200",
+            height="100%",
+            width="100%",
+        ),
+        position="absolute",
+        top=0,
+        bottom=0,
+        left=0,
+        right=0,
+        overflow="hidden",
     )
 
 
