@@ -673,6 +673,233 @@ def make_chart(table: Table, config: ChartConfig):
 
 
 # =============================================================================
+# Code Generation
+# =============================================================================
+
+# Dataset loader code for each dataset
+DATASET_LOADERS = {
+    "iris": "dx.data.iris()",
+    "stocks": "dx.data.stocks()",
+    "tips": "dx.data.tips()",
+    "gapminder": "dx.data.gapminder()",
+    "wind": "dx.data.wind()",
+    "election": "dx.data.election()",
+    "fish_market": "dx.data.fish_market()",
+    "jobs": "dx.data.jobs()",
+    "marketing": "dx.data.marketing()",
+    "flights": "dx.data.flights()",
+    "outages": "dx.data.outages()",
+    # Custom datasets - show placeholder
+    "ohlc_sample": "# Custom OHLC dataset - see chart-builder source for creation code\ntable = create_ohlc_sample()",
+    "hierarchy_sample": "# Custom hierarchy dataset - see chart-builder source for creation code\ntable = create_hierarchy_sample()",
+    "funnel_sample": "# Custom funnel dataset - see chart-builder source for creation code\ntable = create_funnel_sample()",
+    "scatter_3d_sample": "# Custom 3D dataset - see chart-builder source for creation code\ntable = create_scatter_3d_sample()",
+    "polar_sample": "# Custom polar dataset - see chart-builder source for creation code\ntable = create_polar_sample()",
+    "ternary_sample": "# Custom ternary dataset - see chart-builder source for creation code\ntable = create_ternary_sample()",
+    "timeline_sample": "# Custom timeline dataset - see chart-builder source for creation code\ntable = create_timeline_sample()",
+}
+
+
+def _format_value(value) -> str:
+    """Format a value for Python code generation."""
+    if isinstance(value, str):
+        return f'"{value}"'
+    elif isinstance(value, bool):
+        return "True" if value else "False"
+    elif isinstance(value, dict):
+        # Format dict like {"lat": 44.97, "lon": -93.17}
+        items = ", ".join(f'"{k}": {v}' for k, v in value.items())
+        return "{" + items + "}"
+    elif isinstance(value, list):
+        # Format list like ["col1", "col2"]
+        items = ", ".join(_format_value(v) for v in value)
+        return "[" + items + "]"
+    else:
+        return str(value)
+
+
+def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
+    """Generate Python code to recreate the current chart configuration.
+    
+    Args:
+        config: The chart configuration dictionary.
+        dataset_name: The name of the dataset being used.
+        
+    Returns:
+        A string containing Python code that recreates the chart.
+    """
+    chart_type = config.get("chart_type", "scatter")
+    
+    # Build the import statement
+    lines = ["from deephaven.plot import express as dx", ""]
+    
+    # Build the table loading code
+    loader = DATASET_LOADERS.get(dataset_name, f'# Load your table here\ntable = your_table')
+    if dataset_name in ("ohlc_sample", "hierarchy_sample", "funnel_sample", 
+                        "scatter_3d_sample", "polar_sample", "ternary_sample", "timeline_sample"):
+        lines.append(loader)
+    else:
+        lines.append(f"table = {loader}")
+    lines.append("")
+    
+    # Build the chart function call
+    # Determine which parameters to include based on chart type
+    params = []
+    
+    # Common parameters for most chart types
+    if chart_type in ("scatter", "line", "bar", "area", "histogram", "box", "violin", 
+                      "strip", "density_heatmap", "funnel"):
+        if config.get("x"):
+            params.append(f'x="{config["x"]}"')
+        if config.get("y"):
+            params.append(f'y="{config["y"]}"')
+    
+    # Pie-style charts (names, values)
+    if chart_type in ("pie", "funnel_area"):
+        if config.get("names"):
+            params.append(f'names="{config["names"]}"')
+        if config.get("values"):
+            params.append(f'values="{config["values"]}"')
+    
+    # Hierarchical charts
+    if chart_type in ("treemap", "sunburst", "icicle"):
+        if config.get("names"):
+            params.append(f'names="{config["names"]}"')
+        if config.get("values"):
+            params.append(f'values="{config["values"]}"')
+        if config.get("parents"):
+            params.append(f'parents="{config["parents"]}"')
+    
+    # OHLC/Candlestick
+    if chart_type in ("candlestick", "ohlc"):
+        if config.get("x"):
+            params.append(f'x="{config["x"]}"')
+        if config.get("open"):
+            params.append(f'open="{config["open"]}"')
+        if config.get("high"):
+            params.append(f'high="{config["high"]}"')
+        if config.get("low"):
+            params.append(f'low="{config["low"]}"')
+        if config.get("close"):
+            params.append(f'close="{config["close"]}"')
+    
+    # 3D charts
+    if chart_type in ("scatter_3d", "line_3d"):
+        if config.get("x"):
+            params.append(f'x="{config["x"]}"')
+        if config.get("y"):
+            params.append(f'y="{config["y"]}"')
+        if config.get("z"):
+            params.append(f'z="{config["z"]}"')
+    
+    # Polar charts
+    if chart_type in ("scatter_polar", "line_polar"):
+        if config.get("r"):
+            params.append(f'r="{config["r"]}"')
+        if config.get("theta"):
+            params.append(f'theta="{config["theta"]}"')
+    
+    # Ternary charts
+    if chart_type in ("scatter_ternary", "line_ternary"):
+        if config.get("a"):
+            params.append(f'a="{config["a"]}"')
+        if config.get("b"):
+            params.append(f'b="{config["b"]}"')
+        if config.get("c"):
+            params.append(f'c="{config["c"]}"')
+    
+    # Timeline
+    if chart_type == "timeline":
+        if config.get("x_start"):
+            params.append(f'x_start="{config["x_start"]}"')
+        if config.get("x_end"):
+            params.append(f'x_end="{config["x_end"]}"')
+        if config.get("y"):
+            params.append(f'y="{config["y"]}"')
+    
+    # Geo charts
+    if chart_type in ("scatter_geo", "line_geo"):
+        if config.get("lat"):
+            params.append(f'lat="{config["lat"]}"')
+        if config.get("lon"):
+            params.append(f'lon="{config["lon"]}"')
+        if config.get("locations"):
+            params.append(f'locations="{config["locations"]}"')
+        if config.get("locationmode"):
+            params.append(f'locationmode="{config["locationmode"]}"')
+    
+    # Map charts (tile-based)
+    if chart_type in ("scatter_map", "line_map", "density_map"):
+        if config.get("lat"):
+            params.append(f'lat="{config["lat"]}"')
+        if config.get("lon"):
+            params.append(f'lon="{config["lon"]}"')
+        if config.get("zoom"):
+            params.append(f'zoom={config["zoom"]}')
+        if config.get("center"):
+            params.append(f'center={_format_value(config["center"])}')
+        if config.get("map_style"):
+            params.append(f'map_style="{config["map_style"]}"')
+    
+    # Density map specific
+    if chart_type == "density_map":
+        if config.get("z"):
+            params.append(f'z="{config["z"]}"')
+        if config.get("radius"):
+            params.append(f'radius={config["radius"]}')
+    
+    # Common optional parameters
+    if config.get("by"):
+        by_val = config["by"]
+        if isinstance(by_val, list):
+            params.append(f'by={_format_value(by_val)}')
+        else:
+            params.append(f'by="{by_val}"')
+    
+    if config.get("color"):
+        params.append(f'color="{config["color"]}"')
+    
+    if config.get("size"):
+        params.append(f'size="{config["size"]}"')
+    
+    if config.get("symbol"):
+        params.append(f'symbol="{config["symbol"]}"')
+    
+    # Line-specific options
+    if chart_type == "line":
+        if config.get("markers"):
+            params.append("markers=True")
+        if config.get("line_shape") and config["line_shape"] != "linear":
+            params.append(f'line_shape="{config["line_shape"]}"')
+    
+    # Bar-specific options
+    if chart_type == "bar":
+        if config.get("orientation") and config["orientation"] != "v":
+            params.append(f'orientation="{config["orientation"]}"')
+    
+    # Histogram-specific options
+    if chart_type == "histogram":
+        if config.get("nbins") and config["nbins"] != 10:
+            params.append(f'nbins={config["nbins"]}')
+    
+    # Title (common to all)
+    if config.get("title"):
+        params.append(f'title="{config["title"]}"')
+    
+    # Format the function call
+    if params:
+        params_str = ",\n    ".join(params)
+        lines.append(f"chart = dx.{chart_type}(")
+        lines.append("    table,")
+        lines.append(f"    {params_str},")
+        lines.append(")")
+    else:
+        lines.append(f"chart = dx.{chart_type}(table)")
+    
+    return "\n".join(lines)
+
+
+# =============================================================================
 # UI Component
 # =============================================================================
 
@@ -692,8 +919,8 @@ CHART_TYPES = [
     {"key": "treemap", "label": "Treemap", "icon": "vsSymbolClass"},
     {"key": "sunburst", "label": "Sunburst", "icon": "vsPieChart"},
     {"key": "icicle", "label": "Icicle", "icon": "vsGraphLeft"},
-    {"key": "funnel", "label": "Funnel", "icon": "dhFunnel"},
-    {"key": "funnel_area", "label": "Funnel Area", "icon": "dhFunnel"},
+    {"key": "funnel", "label": "Funnel", "icon": "vsFilter"},
+    {"key": "funnel_area", "label": "Funnel Area", "icon": "vsFilter"},
     {"key": "scatter_3d", "label": "Scatter 3D", "icon": "vsCircleFilled"},
     {"key": "line_3d", "label": "Line 3D", "icon": "vsGraphLine"},
     {"key": "scatter_polar", "label": "Scatter Polar", "icon": "vsCircleFilled"},
@@ -3153,10 +3380,41 @@ def chart_builder_app() -> ui.Element:
         min_height="size-3000",
     )
     
-    # Main layout - controls on left, chart on right
+    # Generate the code for the current configuration
+    generated_code = generate_chart_code(config, dataset_name)
+    
+    # Code panel with markdown display
+    code_panel = ui.view(
+        ui.flex(
+            ui.flex(
+                ui.icon("vsCode"),
+                ui.text("Generated Code", UNSAFE_style={"fontWeight": "bold"}),
+                direction="row",
+                align_items="center",
+                gap="size-100",
+            ),
+            ui.markdown(f"```python\n{generated_code}\n```"),
+            direction="column",
+            gap="size-100",
+        ),
+        padding="size-200",
+        background_color="gray-100",
+        border_radius="medium",
+    )
+    
+    # Right side - chart area and code panel stacked vertically
+    right_panel = ui.flex(
+        chart_area,
+        code_panel,
+        direction="column",
+        gap="size-200",
+        flex_grow=1,
+    )
+    
+    # Main layout - controls on left, chart+code on right
     return ui.flex(
         controls,
-        chart_area,
+        right_panel,
         direction="row",
         gap="size-200",
         height="100%",
