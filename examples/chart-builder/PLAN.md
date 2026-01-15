@@ -55,9 +55,17 @@ Build a `@ui.component` that takes a Deephaven table as input and provides a UI 
 22. **scatter_ternary** - Ternary scatter (a, b, c)
 23. **line_ternary** - Ternary line (a, b, c)
 
+### Map/Geo Plots
+
+24. **scatter_geo** - Geographic scatter on world map (lat, lon, optional: locations, color, size, symbol)
+25. **line_geo** - Geographic lines on world map (lat, lon, optional: locations, color, width)
+26. **scatter_map** - Scatter on tile-based map (lat, lon, optional: color, size, symbol)
+27. **line_map** - Lines on tile-based map (lat, lon, optional: color, width)
+28. **density_map** - Density heatmap on tile-based map (lat, lon, optional: z, radius)
+
 ### Other
 
-24. **timeline** - Timeline/Gantt (x_start, x_end, y)
+29. **timeline** - Timeline/Gantt (x_start, x_end, y)
 
 ## Implementation Phases
 
@@ -97,6 +105,57 @@ Build a `@ui.component` that takes a Deephaven table as input and provides a UI 
 - Add remaining plot types
 - Handle coordinate system-specific parameters
 
+### Phase 7: Map/Geo Plots (scatter_geo, line_geo, scatter_map, line_map, density_map)
+
+- Add geographic/map plot types
+- **scatter_geo**: World map scatter plot using lat/lon or location codes
+  - Required: `lat` + `lon` OR `locations` (country codes, state codes, etc.)
+  - Optional: `locationmode` ("ISO-3", "USA-states", "country names"), `color`, `size`, `symbol`, `text`
+- **line_geo**: World map line plot for flight paths, routes, etc.
+  - Required: `lat`, `lon`
+  - Optional: `color`, `width`, `symbol`
+- **scatter_map**: Tile-based map scatter (OpenStreetMap-style)
+  - Required: `lat`, `lon`
+  - Optional: `color`, `size`, `symbol`, `text`, `zoom`, `center`
+- **line_map**: Tile-based map lines for routes/paths
+  - Required: `lat`, `lon`
+  - Optional: `color`, `width`, `line_dash`
+- **density_map**: Tile-based density/heat map
+  - Required: `lat`, `lon`
+  - Optional: `z` (intensity), `radius`, `zoom`, `center`
+
+#### New Sample Datasets
+
+- **flights**: Flight tracking data with `Lat`, `Lon`, `FlightId`, `Origin`, `Destination`, `Speed`
+  - Use with `scatter_map` or `line_map` for flight paths
+  - Default center: `{"lat": 50, "lon": -100}` (North America)
+- **outages**: Power outage data with `Lat`, `Lon`, `Severity`
+  - Use with `scatter_map` or `density_map` for outage visualization
+  - Default center: `{"lat": 44.97, "lon": -93.17}` (Minneapolis area)
+
+#### ChartConfig Additions
+
+```python
+# Map/Geo chart options
+lat: NotRequired[str]          # Latitude column
+lon: NotRequired[str]          # Longitude column
+locations: NotRequired[str]    # Location codes column (for scatter_geo)
+locationmode: NotRequired[Literal["ISO-3", "USA-states", "country names"]]
+radius: NotRequired[int]       # Density map radius
+zoom: NotRequired[int]         # Map zoom level (for tile-based maps)
+center: NotRequired[dict]      # Map center {"lat": float, "lon": float}
+```
+
+#### UI Controls for Map Charts
+
+- Lat/Lon column pickers (required for all map types)
+- Location column picker + locationmode dropdown (scatter_geo only)
+- Size, color, symbol pickers (scatter types)
+- Width picker (line types)
+- Radius slider (density_map)
+- Zoom level control (tile-based maps)
+- Optional center lat/lon inputs
+
 ## Configuration Data Structure
 
 ```python
@@ -110,7 +169,8 @@ class ChartConfig(TypedDict):
         "candlestick", "ohlc",
         "treemap", "sunburst", "funnel", "funnel_area", "icicle",
         "scatter_3d", "line_3d", "scatter_polar", "line_polar",
-        "scatter_ternary", "line_ternary", "timeline"
+        "scatter_ternary", "line_ternary", "timeline",
+        "scatter_geo", "line_geo", "scatter_map", "line_map", "density_map"
     ]
 
     # Common options
@@ -162,6 +222,15 @@ class ChartConfig(TypedDict):
     # Timeline specific
     x_start: NotRequired[str]
     x_end: NotRequired[str]
+
+    # Map/Geo specific
+    lat: NotRequired[str]
+    lon: NotRequired[str]
+    locations: NotRequired[str]
+    locationmode: NotRequired[Literal["ISO-3", "USA-states", "country names"]]
+    radius: NotRequired[int]
+    zoom: NotRequired[int]
+    # Note: center would be dict but omitted for simplicity
 
     # Common styling
     log_x: NotRequired[bool]
