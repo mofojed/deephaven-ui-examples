@@ -54,6 +54,10 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_strip(table, config)
     elif chart_type == "density_heatmap":
         return _make_density_heatmap(table, config)
+    elif chart_type == "candlestick":
+        return _make_candlestick(table, config)
+    elif chart_type == "ohlc":
+        return _make_ohlc(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -319,3 +323,45 @@ def _make_density_heatmap(table: Table, config: ChartConfig):
         kwargs["title"] = config["title"]
     
     return dx.density_heatmap(table, **kwargs)
+
+
+def _make_candlestick(table: Table, config: ChartConfig):
+    """Create a candlestick chart.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the candlestick chart.
+    """
+    kwargs = {
+        "x": config["x"],
+        "open": config["open"],
+        "high": config["high"],
+        "low": config["low"],
+        "close": config["close"],
+    }
+    
+    return dx.candlestick(table, **kwargs)
+
+
+def _make_ohlc(table: Table, config: ChartConfig):
+    """Create an OHLC chart.
+    
+    Args:
+        table: The source data table.
+        config: Chart configuration options.
+        
+    Returns:
+        A DeephavenFigure containing the OHLC chart.
+    """
+    kwargs = {
+        "x": config["x"],
+        "open": config["open"],
+        "high": config["high"],
+        "low": config["low"],
+        "close": config["close"],
+    }
+    
+    return dx.ohlc(table, **kwargs)

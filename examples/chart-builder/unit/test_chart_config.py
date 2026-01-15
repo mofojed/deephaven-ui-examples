@@ -245,3 +245,71 @@ class TestChartConfig:
         config: ChartConfig = {"chart_type": "density_heatmap", "x": "col1", "y": "col2"}
         errors = validate_config(config)
         assert len(errors) == 0
+
+    # Phase 4: Financial Plots
+    def test_get_required_fields_candlestick(self):
+        """Test required fields for candlestick chart."""
+        required = get_required_fields("candlestick")
+        assert "x" in required
+        assert "open" in required
+        assert "high" in required
+        assert "low" in required
+        assert "close" in required
+
+    def test_validate_config_valid_candlestick(self):
+        """Test validation passes for valid candlestick config."""
+        config: ChartConfig = {
+            "chart_type": "candlestick",
+            "x": "date",
+            "open": "open_price",
+            "high": "high_price",
+            "low": "low_price",
+            "close": "close_price",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0
+
+    def test_validate_config_candlestick_missing_x(self):
+        """Test validation fails for candlestick without x."""
+        config: ChartConfig = {
+            "chart_type": "candlestick",
+            "open": "open_price",
+            "high": "high_price",
+            "low": "low_price",
+            "close": "close_price",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 1
+        assert "x is required" in errors[0]
+
+    def test_validate_config_candlestick_missing_ohlc(self):
+        """Test validation fails for candlestick without OHLC columns."""
+        config: ChartConfig = {"chart_type": "candlestick", "x": "date"}
+        errors = validate_config(config)
+        assert len(errors) == 4  # open, high, low, close all missing
+        assert any("open is required" in e for e in errors)
+        assert any("high is required" in e for e in errors)
+        assert any("low is required" in e for e in errors)
+        assert any("close is required" in e for e in errors)
+
+    def test_get_required_fields_ohlc(self):
+        """Test required fields for ohlc chart."""
+        required = get_required_fields("ohlc")
+        assert "x" in required
+        assert "open" in required
+        assert "high" in required
+        assert "low" in required
+        assert "close" in required
+
+    def test_validate_config_valid_ohlc(self):
+        """Test validation passes for valid ohlc config."""
+        config: ChartConfig = {
+            "chart_type": "ohlc",
+            "x": "date",
+            "open": "open_price",
+            "high": "high_price",
+            "low": "low_price",
+            "close": "close_price",
+        }
+        errors = validate_config(config)
+        assert len(errors) == 0

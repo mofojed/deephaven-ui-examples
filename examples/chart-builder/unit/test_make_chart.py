@@ -429,3 +429,38 @@ class TestMakeChartCreation:
         
         chart = make_chart(table, config)
         assert chart is not None
+
+    # Phase 4: Financial Plots
+    def test_make_candlestick(self):
+        """Test creating a basic candlestick chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.stocks()
+        config: ChartConfig = {
+            "chart_type": "candlestick",
+            "x": "Timestamp",
+            "open": "Price",
+            "high": "Price",
+            "low": "Price",
+            "close": "Price",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None
+
+    def test_make_ohlc(self):
+        """Test creating a basic OHLC chart."""
+        import deephaven.plot.express as dx
+        
+        table = dx.data.stocks()
+        config: ChartConfig = {
+            "chart_type": "ohlc",
+            "x": "Timestamp",
+            "open": "Price",
+            "high": "Price",
+            "low": "Price",
+            "close": "Price",
+        }
+        
+        chart = make_chart(table, config)
+        assert chart is not None

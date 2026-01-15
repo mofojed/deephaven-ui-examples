@@ -4,7 +4,7 @@ from typing import Literal, TypedDict, NotRequired
 
 
 # Chart types supported
-ChartType = Literal["scatter", "line", "bar", "area", "pie", "histogram", "box", "violin", "strip", "density_heatmap"]
+ChartType = Literal["scatter", "line", "bar", "area", "pie", "histogram", "box", "violin", "strip", "density_heatmap", "candlestick", "ohlc"]
 
 # Line shape options (spline is NOT supported by dx.line)
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
@@ -53,6 +53,12 @@ class ChartConfig(TypedDict):
     # Histogram-specific options
     nbins: NotRequired[int]
     
+    # OHLC/Candlestick-specific options
+    open: NotRequired[str]
+    high: NotRequired[str]
+    low: NotRequired[str]
+    close: NotRequired[str]
+    
     # Axis options
     log_x: NotRequired[bool]
     log_y: NotRequired[bool]
@@ -75,6 +81,8 @@ def get_required_fields(chart_type: ChartType) -> list[str]:
         return []  # x OR y, validated separately
     elif chart_type in ("box", "violin", "strip", "density_heatmap"):
         return ["x", "y"]
+    elif chart_type in ("candlestick", "ohlc"):
+        return ["x", "open", "high", "low", "close"]
     return []
 
 

@@ -23,7 +23,8 @@ if TYPE_CHECKING:
 
 ChartType = Literal[
     "scatter", "line", "bar", "area", "pie",
-    "histogram", "box", "violin", "strip", "density_heatmap"
+    "histogram", "box", "violin", "strip", "density_heatmap",
+    "candlestick", "ohlc"
 ]
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
 Orientation = Literal["v", "h"]
@@ -50,6 +51,11 @@ class ChartConfig(TypedDict):
     values: NotRequired[str]
     # Histogram options
     nbins: NotRequired[int]
+    # OHLC/Candlestick options
+    open: NotRequired[str]
+    high: NotRequired[str]
+    low: NotRequired[str]
+    close: NotRequired[str]
 
 
 # =============================================================================
@@ -74,6 +80,8 @@ def _validate_config(config: ChartConfig) -> list[str]:
         if not config.get("values"):
             errors.append("values is required for pie charts")
     elif chart_type == "histogram":
+        placeholder_msg = "Select X or Y column to preview chart"
+    elif chart_type in ("candlestick", "ohlc"):
         # Histogram needs at least x OR y
         if not config.get("x") and not config.get("y"):
             errors.append("x or y is required for histogram charts")
@@ -88,6 +96,17 @@ def _validate_config(config: ChartConfig) -> list[str]:
             errors.append("x is required for density_heatmap charts")
         if not config.get("y"):
             errors.append("y is required for density_heatmap charts")
+    elif chart_type in ("candlestick", "ohlc"):
+        if not config.get("x"):
+            errors.append(f"x is required for {chart_type} charts")
+        if not config.get("open"):
+            errors.append(f"open is required for {chart_type} charts")
+        if not config.get("high"):
+            errors.append(f"high is required for {chart_type} charts")
+        if not config.get("low"):
+            errors.append(f"low is required for {chart_type} charts")
+        if not config.get("close"):
+            errors.append(f"close is required for {chart_type} charts")
     return errors
 
 
@@ -205,6 +224,30 @@ def _make_density_heatmap(table: Table, config: ChartConfig):
     return dx.density_heatmap(table, **kwargs)
 
 
+def _make_candlestick(table: Table, config: ChartConfig):
+    """Create a candlestick chart."""
+    kwargs = {
+        "x": config["x"],
+        "open": config["open"],
+        "high": config["high"],
+        "low": config["low"],
+        "close": config["close"],
+    }
+    return dx.candlestick(table, **kwargs)
+
+
+def _make_ohlc(table: Table, config: ChartConfig):
+    """Create an OHLC chart."""
+    kwargs = {
+        "x": config["x"],
+        "open": config["open"],
+        "high": config["high"],
+        "low": config["low"],
+        "close": config["close"],
+    }
+    return dx.ohlc(table, **kwargs)
+
+
 def make_chart(table: Table, config: ChartConfig):
     """Create a chart from the given table and configuration."""
     errors = _validate_config(config)
@@ -223,6 +266,8 @@ def make_chart(table: Table, config: ChartConfig):
     elif chart_type == "pie":
         return _make_pie(table, config)
     elif chart_type == "histogram":
+        placeholder_msg = "Select X or Y column to preview chart"
+    elif chart_type in ("candlestick", "ohlc"):
         return _make_histogram(table, config)
     elif chart_type == "box":
         return _make_box(table, config)
@@ -232,6 +277,10 @@ def make_chart(table: Table, config: ChartConfig):
         return _make_strip(table, config)
     elif chart_type == "density_heatmap":
         return _make_density_heatmap(table, config)
+    elif chart_type == "candlestick":
+        return _make_candlestick(table, config)
+    elif chart_type == "ohlc":
+        return _make_ohlc(table, config)
     else:
         raise ValueError(f"Unsupported chart type: {chart_type}")
 
@@ -251,6 +300,8 @@ CHART_TYPES = [
     {"key": "violin", "label": "Violin", "icon": "vsSymbolClass"},
     {"key": "strip", "label": "Strip", "icon": "vsEllipsis"},
     {"key": "density_heatmap", "label": "Density Heatmap", "icon": "vsSymbolColor"},
+    {"key": "candlestick", "label": "Candlestick", "icon": "vsGraphLine"},
+    {"key": "ohlc", "label": "OHLC", "icon": "vsGraphLine"},
 ]
 
 ORIENTATIONS = [
@@ -346,6 +397,12 @@ def chart_builder(table: Table) -> ui.Element:
     # Histogram-specific state
     nbins, set_nbins = ui.use_state(10)
     
+    # OHLC/Candlestick-specific state
+    open_col, set_open_col = ui.use_state("")
+    high_col, set_high_col = ui.use_state("")
+    low_col, set_low_col = ui.use_state("")
+    close_col, set_close_col = ui.use_state("")
+    
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
         """Update a group by column at a specific index."""
@@ -418,6 +475,19 @@ def chart_builder(table: Table) -> ui.Element:
         if chart_type in ("box", "violin", "strip") and by_cols:
             config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
     
+    # Candlestick/OHLC config
+    if chart_type in ("candlestick", "ohlc"):
+        if x_col:
+            config["x"] = x_col
+        if open_col:
+            config["open"] = open_col
+        if high_col:
+            config["high"] = high_col
+        if low_col:
+            config["low"] = low_col
+        if close_col:
+            config["close"] = close_col
+    
     if title:
         config["title"] = title
     
@@ -437,6 +507,19 @@ def chart_builder(table: Table) -> ui.Element:
         if orientation:
             config["orientation"] = orientation
     
+    # Candlestick/OHLC config
+    if chart_type in ("candlestick", "ohlc"):
+        if x_col:
+            config["x"] = x_col
+        if open_col:
+            config["open"] = open_col
+        if high_col:
+            config["high"] = high_col
+        if low_col:
+            config["low"] = low_col
+        if close_col:
+            config["close"] = close_col
+    
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -444,9 +527,13 @@ def chart_builder(table: Table) -> ui.Element:
     elif chart_type == "pie":
         can_create_chart = bool(names_col and values_col)
     elif chart_type == "histogram":
+        placeholder_msg = "Select X or Y column to preview chart"
+    elif chart_type in ("candlestick", "ohlc"):
         can_create_chart = bool(x_col or y_col)  # Only need one
     elif chart_type in ("box", "violin", "strip", "density_heatmap"):
         can_create_chart = bool(x_col and y_col)
+    elif chart_type in ("candlestick", "ohlc"):
+        can_create_chart = bool(x_col and open_col and high_col and low_col and close_col)
     
     # Create chart if we have valid configuration
     chart = None
@@ -517,6 +604,55 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ) if chart_type == "histogram" else None,
             
+            # X column for candlestick/ohlc (usually timestamp/date)
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                label="X (Date/Time)",
+                selected_key=x_col,
+                on_selection_change=set_x_col,
+                width="100%",
+            ) if chart_type in ("candlestick", "ohlc") else None,
+            
+            # OHLC columns for candlestick/ohlc
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Open",
+                    selected_key=open_col,
+                    on_selection_change=set_open_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="High",
+                    selected_key=high_col,
+                    on_selection_change=set_high_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("candlestick", "ohlc") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Low",
+                    selected_key=low_col,
+                    on_selection_change=set_low_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Close",
+                    selected_key=close_col,
+                    on_selection_change=set_close_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("candlestick", "ohlc") else None,
+            
             # Names and Values columns (for pie)
             ui.flex(
                 ui.picker(
@@ -538,7 +674,7 @@ def chart_builder(table: Table) -> ui.Element:
                 width="100%",
             ) if chart_type == "pie" else None,
             
-            # Group by (for charts that support it - not pie or density_heatmap)
+            # Group by (for charts that support it - not pie, density_heatmap, or financial)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
                 *[ui.flex(
@@ -564,7 +700,7 @@ def chart_builder(table: Table) -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type not in ("pie", "density_heatmap") else None,
+            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc") else None,
             
             # Histogram-specific options
             ui.number_field(
@@ -648,6 +784,8 @@ def chart_builder(table: Table) -> ui.Element:
         placeholder_msg = "Select Names and Values columns to preview chart"
     elif chart_type == "histogram":
         placeholder_msg = "Select X or Y column to preview chart"
+    elif chart_type in ("candlestick", "ohlc"):
+        placeholder_msg = "Select X and OHLC columns to preview chart"
     else:
         placeholder_msg = "Select X and Y columns to preview chart"
     
@@ -711,6 +849,12 @@ def chart_builder_app() -> ui.Element:
     
     # Histogram-specific state
     nbins, set_nbins = ui.use_state(10)
+    
+    # OHLC/Candlestick-specific state
+    open_col, set_open_col = ui.use_state("")
+    high_col, set_high_col = ui.use_state("")
+    low_col, set_low_col = ui.use_state("")
+    close_col, set_close_col = ui.use_state("")
     
     # Handlers for multi-select group by
     def update_by_col(index: int, col: str):
@@ -792,6 +936,19 @@ def chart_builder_app() -> ui.Element:
         if nbins:
             config["nbins"] = nbins
     
+    # Candlestick/OHLC config
+    if chart_type in ("candlestick", "ohlc"):
+        if x_col:
+            config["x"] = x_col
+        if open_col:
+            config["open"] = open_col
+        if high_col:
+            config["high"] = high_col
+        if low_col:
+            config["low"] = low_col
+        if close_col:
+            config["close"] = close_col
+    
     # Determine if chart can be created
     can_create_chart = False
     if chart_type in ("scatter", "line", "bar", "area"):
@@ -802,6 +959,8 @@ def chart_builder_app() -> ui.Element:
         can_create_chart = bool(x_col or y_col)  # Only need one
     elif chart_type in ("box", "violin", "strip", "density_heatmap"):
         can_create_chart = bool(x_col and y_col)
+    elif chart_type in ("candlestick", "ohlc"):
+        can_create_chart = bool(x_col and open_col and high_col and low_col and close_col)
     
     chart = None
     error_message = None
@@ -884,6 +1043,55 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ) if chart_type == "histogram" else None,
             
+            # X column for candlestick/ohlc (usually timestamp/date)
+            ui.picker(
+                *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                label="X (Date/Time)",
+                selected_key=x_col,
+                on_selection_change=set_x_col,
+                width="100%",
+            ) if chart_type in ("candlestick", "ohlc") else None,
+            
+            # OHLC columns for candlestick/ohlc
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Open",
+                    selected_key=open_col,
+                    on_selection_change=set_open_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="High",
+                    selected_key=high_col,
+                    on_selection_change=set_high_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("candlestick", "ohlc") else None,
+            ui.flex(
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Low",
+                    selected_key=low_col,
+                    on_selection_change=set_low_col,
+                    flex_grow=1,
+                ),
+                ui.picker(
+                    *[ui.item(item["label"], key=item["key"]) for item in column_items],
+                    label="Close",
+                    selected_key=close_col,
+                    on_selection_change=set_close_col,
+                    flex_grow=1,
+                ),
+                direction="row",
+                gap="size-100",
+                width="100%",
+            ) if chart_type in ("candlestick", "ohlc") else None,
+            
             # Names and Values columns (for pie charts)
             ui.flex(
                 ui.picker(
@@ -905,7 +1113,7 @@ def chart_builder_app() -> ui.Element:
                 width="100%",
             ) if chart_type == "pie" else None,
             
-            # Group by (for charts that support it - not pie or density_heatmap)
+            # Group by (for charts that support it - not pie, density_heatmap, or OHLC charts)
             ui.flex(
                 # Show dropdowns for each selected column plus one empty one
                 *[ui.flex(
@@ -931,7 +1139,7 @@ def chart_builder_app() -> ui.Element:
                 direction="column",
                 gap="size-100",
                 width="100%",
-            ) if chart_type not in ("pie", "density_heatmap") else None,
+            ) if chart_type not in ("pie", "density_heatmap", "candlestick", "ohlc") else None,
             
             # Histogram-specific options
             ui.number_field(
@@ -1015,6 +1223,8 @@ def chart_builder_app() -> ui.Element:
         placeholder_msg = "Select Names and Values columns to preview chart"
     elif chart_type == "histogram":
         placeholder_msg = "Select X or Y column to preview chart"
+    elif chart_type in ("candlestick", "ohlc"):
+        placeholder_msg = "Select X and OHLC columns to preview chart"
     else:
         placeholder_msg = "Select X and Y columns to preview chart"
     
