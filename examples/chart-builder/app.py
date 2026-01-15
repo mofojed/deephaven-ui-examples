@@ -328,50 +328,37 @@ DATASETS = [
     {"key": "fish_market", "label": "Fish Market", "description": "Fish market sales"},
     {"key": "jobs", "label": "Jobs", "description": "Employment data"},
     {"key": "marketing", "label": "Marketing", "description": "Marketing campaign data"},
-    {"key": "ohlc_sample", "label": "OHLC Sample", "description": "Sample OHLC data for candlestick charts"},
+    {"key": "ohlc_sample", "label": "Stocks OHLC (1min)", "description": "Stocks data binned into 1-minute OHLC"},
 ]
 
 
 def _create_ohlc_sample() -> Table:
-    """Create a sample OHLC dataset for candlestick/ohlc charts."""
-    from deephaven import new_table
-    from deephaven.column import int_col, double_col, string_col
-
-    # Sample OHLC data for multiple symbols over several days
-    dates = list(range(1, 31)) * 3  # 30 days for 3 symbols
-    symbols = ["AAPL"] * 30 + ["GOOGL"] * 30 + ["MSFT"] * 30
-
-    # Generate realistic-looking OHLC data
-    import random
-    random.seed(42)
-
-    opens, highs, lows, closes, volumes = [], [], [], [], []
-    base_prices = {"AAPL": 150.0, "GOOGL": 140.0, "MSFT": 380.0}
-
-    for i, sym in enumerate(symbols):
-        day = dates[i]
-        base = base_prices[sym] + (day - 15) * 0.5  # Slight upward trend
-        open_price = base + random.uniform(-2, 2)
-        close_price = open_price + random.uniform(-3, 3)
-        high_price = max(open_price, close_price) + random.uniform(0, 2)
-        low_price = min(open_price, close_price) - random.uniform(0, 2)
-        volume = random.randint(1000000, 5000000)
-
-        opens.append(round(open_price, 2))
-        highs.append(round(high_price, 2))
-        lows.append(round(low_price, 2))
-        closes.append(round(close_price, 2))
-        volumes.append(volume)
-
-    return new_table([
-        int_col("Day", dates),
-        string_col("Symbol", symbols),
-        double_col("Open", opens),
-        double_col("High", highs),
-        double_col("Low", lows),
-        double_col("Close", closes),
-        int_col("Volume", volumes),
-    ])
+    """Create an OHLC dataset by binning the stocks data into 1-minute intervals.
+    
+    This follows the approach from the Deephaven plotly-express docs:
+    https://deephaven.io/core/plotly/docs/candlestick/
+    
+    Note: Filtered to DOG symbol since candlestick charts can't aggregate
+    multiple symbols with the same timestamp.
+    """
+    import deephaven.agg as agg
+    
+    stocks = dx.data.stocks()
+    
+    # Compute OHLC per symbol for each minute
+    # Use nanoseconds for the bin size (1 minute = 60 * 1e9 nanos)
+    # Filter to single symbol since candlestick can't handle multiple symbols
+    return stocks.update_view(
+        "BinnedTimestamp = lowerBin(Timestamp, 'PT1m')"
+    ).agg_by(
+        [
+            agg.first("Open=Price"),
+            agg.max_("High=Price"),
+            agg.min_("Low=Price"),
+            agg.last("Close=Price"),
+        ],
+        by=["Sym", "BinnedTimestamp"],
+    ).where("Sym == `DOG`")
 
 
 def _load_dataset(name: str) -> Table:

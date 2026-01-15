@@ -449,17 +449,18 @@ class TestMakeChartCreation:
         assert chart is not None
 
     def test_make_candlestick_with_ohlc_sample(self):
-        """Test creating a candlestick chart with proper OHLC data."""
+        """Test creating a candlestick chart with binned stocks OHLC data."""
         # Import the OHLC sample data creator from app.py
         import sys
         from pathlib import Path
         sys.path.insert(0, str(Path(__file__).parent.parent))
         from app import _create_ohlc_sample
         
+        # OHLC sample is already filtered to single symbol (DOG)
         table = _create_ohlc_sample()
         config: ChartConfig = {
             "chart_type": "candlestick",
-            "x": "Day",
+            "x": "BinnedTimestamp",
             "open": "Open",
             "high": "High",
             "low": "Low",
@@ -487,17 +488,18 @@ class TestMakeChartCreation:
         assert chart is not None
 
     def test_make_ohlc_with_ohlc_sample(self):
-        """Test creating an OHLC chart with proper OHLC data."""
+        """Test creating an OHLC chart with binned stocks OHLC data."""
         # Import the OHLC sample data creator from app.py
         import sys
         from pathlib import Path
         sys.path.insert(0, str(Path(__file__).parent.parent))
         from app import _create_ohlc_sample
         
+        # OHLC sample is already filtered to single symbol (DOG)
         table = _create_ohlc_sample()
         config: ChartConfig = {
             "chart_type": "ohlc",
-            "x": "Day",
+            "x": "BinnedTimestamp",
             "open": "Open",
             "high": "High",
             "low": "Low",
