@@ -145,6 +145,24 @@ When making changes to this repository:
 3. **Document new components** - Add docstrings and update relevant documentation
 4. **Create PLAN.md first** - Always plan before implementing a new example
 
+## Viewing Demos
+
+When opening a link to view an example demo in the browser, **always use the iframe/widget URL pattern** instead of the main Deephaven UI URL:
+
+```
+http://localhost:10000/iframe/widget/?name=WIDGET_NAME&psk=PSK
+```
+
+- `WIDGET_NAME` is the variable name of the widget exported in `app.py` (e.g., `chart_builder_demo`)
+- `PSK` is the pre-shared key shown in the server output
+
+For example, for chart-builder:
+
+- ✅ Correct: `http://localhost:10000/iframe/widget/?name=chart_builder_demo&psk=ABC123`
+- ❌ Incorrect: `http://localhost:10000/?psk=ABC123`
+
+The iframe/widget URL directly displays the widget without the Deephaven IDE chrome, providing a cleaner view for demos.
+
 ## Resources
 
 - [deephaven.ui Documentation](https://deephaven.io/core/docs/how-to-guides/user-interface/overview/)

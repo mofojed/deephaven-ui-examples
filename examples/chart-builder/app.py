@@ -723,24 +723,114 @@ LINE_SHAPES = [
 
 # Available datasets from dx.data
 DATASETS = [
-    {"key": "iris", "label": "Iris", "description": "Iris flower measurements"},
-    {"key": "stocks", "label": "Stocks", "description": "Stock price data"},
-    {"key": "tips", "label": "Tips", "description": "Restaurant tips data"},
-    {"key": "gapminder", "label": "Gapminder", "description": "World development indicators"},
-    {"key": "wind", "label": "Wind", "description": "Wind speed and direction"},
-    {"key": "election", "label": "Election", "description": "Election results"},
-    {"key": "fish_market", "label": "Fish Market", "description": "Fish market sales"},
-    {"key": "jobs", "label": "Jobs", "description": "Employment data"},
-    {"key": "marketing", "label": "Marketing", "description": "Marketing campaign data"},
-    {"key": "ohlc_sample", "label": "Stocks OHLC (1min)", "description": "Stocks data binned into 1-minute OHLC"},
-    {"key": "hierarchy_sample", "label": "Product Hierarchy", "description": "Hierarchical product sales data"},
-    {"key": "funnel_sample", "label": "Sales Funnel", "description": "Sales funnel stages"},
-    {"key": "scatter_3d_sample", "label": "3D Points", "description": "Random 3D point cloud with categories"},
-    {"key": "polar_sample", "label": "Polar Data", "description": "Wind-like polar coordinate data"},
-    {"key": "ternary_sample", "label": "Ternary Data", "description": "Composition data (e.g., soil types)"},
-    {"key": "timeline_sample", "label": "Timeline", "description": "Project timeline with tasks"},
-    {"key": "flights", "label": "Flights", "description": "Flight tracking with lat/lon positions"},
-    {"key": "outages", "label": "Outages", "description": "Power outage locations with severity"},
+    {
+        "key": "iris",
+        "label": "Iris",
+        "icon": "vsSymbolColor",
+        "description": "Iris flower measurements (sepal/petal dimensions). Good for: scatter, histogram, box, violin, strip, density_heatmap",
+    },
+    {
+        "key": "stocks",
+        "label": "Stocks",
+        "icon": "vsGraphLine",
+        "description": "Real-time stock prices over time. Good for: line, area, scatter, histogram",
+    },
+    {
+        "key": "tips",
+        "label": "Tips",
+        "icon": "vsCreditCard",
+        "description": "Restaurant tips with bill totals. Good for: scatter, bar, histogram, box, violin",
+    },
+    {
+        "key": "gapminder",
+        "label": "Gapminder",
+        "icon": "vsGlobe",
+        "description": "World development indicators by country/year. Good for: scatter, line, bar, scatter_geo",
+    },
+    {
+        "key": "wind",
+        "label": "Wind",
+        "icon": "vsCompass",
+        "description": "Wind speed and direction data. Good for: scatter_polar, line_polar, bar",
+    },
+    {
+        "key": "election",
+        "label": "Election",
+        "icon": "vsOrganization",
+        "description": "Election results by district. Good for: bar, pie, scatter_geo",
+    },
+    {
+        "key": "fish_market",
+        "label": "Fish Market",
+        "icon": "vsTag",
+        "description": "Fish market sales with species/weight. Good for: scatter, bar, histogram, box",
+    },
+    {
+        "key": "jobs",
+        "label": "Jobs",
+        "icon": "vsBriefcase",
+        "description": "Employment data over time by gender. Good for: line, area, bar, pie",
+    },
+    {
+        "key": "marketing",
+        "label": "Marketing",
+        "icon": "vsMegaphone",
+        "description": "Marketing campaign performance. Good for: scatter, bar, pie, funnel",
+    },
+    {
+        "key": "ohlc_sample",
+        "label": "Stocks OHLC (1min)",
+        "icon": "vsGraphScatter",
+        "description": "Stock data binned to 1-minute OHLC. Good for: candlestick, ohlc",
+    },
+    {
+        "key": "hierarchy_sample",
+        "label": "Product Hierarchy",
+        "icon": "vsTypeHierarchy",
+        "description": "Hierarchical product sales (category/product). Good for: treemap, sunburst, icicle",
+    },
+    {
+        "key": "funnel_sample",
+        "label": "Sales Funnel",
+        "icon": "vsFilter",
+        "description": "Sales pipeline stages with conversion. Good for: funnel, funnel_area",
+    },
+    {
+        "key": "scatter_3d_sample",
+        "label": "3D Points",
+        "icon": "vsSymbolMisc",
+        "description": "Random 3D point cloud with categories. Good for: scatter_3d, line_3d",
+    },
+    {
+        "key": "polar_sample",
+        "label": "Polar Data",
+        "icon": "vsPieChart",
+        "description": "Wind-like polar coordinate data. Good for: scatter_polar, line_polar",
+    },
+    {
+        "key": "ternary_sample",
+        "label": "Ternary Data",
+        "icon": "vsTriangleUp",
+        "description": "Composition data (soil types). Good for: scatter_ternary, line_ternary",
+    },
+    {
+        "key": "timeline_sample",
+        "label": "Timeline",
+        "icon": "vsCalendar",
+        "description": "Project timeline with task durations. Good for: timeline",
+    },
+    {
+        "key": "flights",
+        "label": "Flights",
+        "icon": "vsRocket",
+        "description": "Flight tracking with lat/lon positions. Good for: scatter_geo, line_geo, scatter_map, line_map",
+    },
+    {
+        "key": "outages",
+        "label": "Outages",
+        "icon": "vsWarning",
+        "description": "Power outage locations with severity. Good for: scatter_map, density_map, scatter_geo",
+    },
 ]
 
 
@@ -2360,9 +2450,15 @@ def chart_builder_app() -> ui.Element:
     # Controls panel - compact sidebar
     controls = ui.view(
         ui.flex(
-            # Dataset selector
+            # Dataset selector with icons and descriptions
             ui.picker(
-                *[ui.item(ds["label"], key=ds["key"], text_value=ds["label"]) for ds in DATASETS],
+                *[ui.item(
+                    ui.icon(ds["icon"]),
+                    ui.text(ds["label"]),
+                    ui.text(ds["description"], slot="description"),
+                    key=ds["key"],
+                    text_value=ds["label"],
+                ) for ds in DATASETS],
                 label="Dataset",
                 selected_key=dataset_name,
                 on_selection_change=handle_dataset_change,
