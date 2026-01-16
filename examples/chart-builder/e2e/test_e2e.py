@@ -302,13 +302,17 @@ def select_chart_type(page: Page, chart_type_name: str):
     # The listbox uses virtual scrolling - we need to scroll to make items visible
     listbox = popover.locator('[role="listbox"]')
 
-    # Scroll the listbox to the bottom to trigger rendering of all items
-    # Map chart types are near the bottom of the list
-    listbox.evaluate("el => el.scrollTop = el.scrollHeight")
-    page.wait_for_timeout(300)
-
-    # Now find and click the chart type item
+    # Try to find the item first without scrolling
     chart_type_item = popover.get_by_text(chart_type_name, exact=True)
+
+    # If not visible, try scrolling incrementally to find it
+    for scroll_pos in [0, 200, 400, 600, 800, 1000]:
+        listbox.evaluate(f"el => el.scrollTop = {scroll_pos}")
+        page.wait_for_timeout(200)
+        if chart_type_item.is_visible():
+            break
+
+    # Now click the item
     chart_type_item.click()
     page.wait_for_timeout(500)
 
@@ -997,3 +1001,338 @@ class TestColumnTypeDescriptionsE2E:
         # Check for the (None) option in the dropdown
         none_option = popover.get_by_text("(None)")
         expect(none_option).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestDistributionChartAdvancedOptionsE2E:
+    """Tests for distribution chart advanced options (Phase 11)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_histogram_advanced_options_visible(self, demo_page: Page):
+        """Test that histogram advanced options are visible."""
+        page = demo_page
+
+        # Select Histogram chart type
+        select_chart_type(page, "Histogram")
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify histogram-specific options are visible (use button role for pickers)
+        aggregation = page.get_by_role("button", name="Aggregation")
+        expect(aggregation.first).to_be_visible()
+
+        normalization = page.get_by_role("button", name="Normalization")
+        expect(normalization.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_histogram_histfunc_updates_code(self, demo_page: Page):
+        """Test that changing histogram aggregation updates generated code."""
+        page = demo_page
+
+        # Select Histogram chart type
+        select_chart_type(page, "Histogram")
+
+        # Select X column first
+        x_picker = page.get_by_role("button", name="X")
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("SepalLength").click()
+        page.wait_for_timeout(300)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Change Aggregation to Sum
+        aggregation = page.get_by_role("button", name="Aggregation")
+        aggregation.click()
+        page.wait_for_timeout(300)
+        page.get_by_test_id("popover").get_by_text("Sum", exact=True).click()
+        page.wait_for_timeout(500)
+
+        # Check that histfunc appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text('histfunc="sum"')
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_histogram_cumulative_updates_code(self, demo_page: Page):
+        """Test that toggling cumulative checkbox updates generated code."""
+        page = demo_page
+
+        # Select Histogram chart type
+        select_chart_type(page, "Histogram")
+
+        # Select X column first
+        x_picker = page.get_by_role("button", name="X")
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("SepalLength").click()
+        page.wait_for_timeout(300)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Click the Cumulative checkbox
+        cumulative_checkbox = page.get_by_label("Cumulative")
+        cumulative_checkbox.click(force=True)
+        page.wait_for_timeout(500)
+
+        # Check that cumulative appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text("cumulative=True")
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_box_advanced_options_visible(self, demo_page: Page):
+        """Test that box plot advanced options are visible."""
+        page = demo_page
+
+        # Select Box chart type
+        select_chart_type(page, "Box")
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify box-specific options are visible (use button role for pickers)
+        box_mode = page.get_by_role("button", name="Box Mode")
+        expect(box_mode.first).to_be_visible()
+
+        show_points = page.get_by_role("button", name="Show Points")
+        expect(show_points.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_box_notched_updates_code(self, demo_page: Page):
+        """Test that toggling notched checkbox updates generated code."""
+        page = demo_page
+
+        # Select Box chart type
+        select_chart_type(page, "Box")
+
+        # Select X and Y columns first
+        x_picker = page.get_by_label("X", exact=True)
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("Species", exact=True).click()
+        page.wait_for_timeout(300)
+
+        y_picker = page.get_by_label("Y", exact=True)
+        y_picker.click()
+        page.get_by_test_id("popover").get_by_text("SepalLength").click()
+        page.wait_for_timeout(300)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Click the Notched checkbox
+        notched_checkbox = page.get_by_label("Notched (show confidence interval)")
+        notched_checkbox.click(force=True)
+        page.wait_for_timeout(500)
+
+        # Check that notched appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text("notched=True")
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_box_points_updates_code(self, demo_page: Page):
+        """Test that changing show points option updates generated code."""
+        page = demo_page
+
+        # Select Box chart type
+        select_chart_type(page, "Box")
+
+        # Select X and Y columns first
+        x_picker = page.get_by_label("X", exact=True)
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("Species", exact=True).click()
+        page.wait_for_timeout(300)
+
+        y_picker = page.get_by_label("Y", exact=True)
+        y_picker.click()
+        page.get_by_test_id("popover").get_by_text("SepalLength").click()
+        page.wait_for_timeout(300)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Change Show Points to "All points"
+        show_points = page.get_by_role("button", name="Show Points")
+        show_points.click()
+        page.wait_for_timeout(300)
+        page.get_by_test_id("popover").get_by_text("All points", exact=True).click()
+        page.wait_for_timeout(500)
+
+        # Check that points appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text('points="all"')
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_violin_advanced_options_visible(self, demo_page: Page):
+        """Test that violin plot advanced options are visible."""
+        page = demo_page
+
+        # Select Violin chart type
+        select_chart_type(page, "Violin")
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify violin-specific options are visible (use button role for pickers)
+        violin_mode = page.get_by_role("button", name="Violin Mode")
+        expect(violin_mode.first).to_be_visible()
+
+        show_inner_box = page.get_by_label("Show inner box plot")
+        expect(show_inner_box).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_violin_box_updates_code(self, demo_page: Page):
+        """Test that toggling violin box checkbox updates generated code."""
+        page = demo_page
+
+        # Select Violin chart type
+        select_chart_type(page, "Violin")
+
+        # Select X and Y columns first
+        x_picker = page.get_by_label("X", exact=True)
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("Species", exact=True).click()
+        page.wait_for_timeout(300)
+
+        y_picker = page.get_by_label("Y", exact=True)
+        y_picker.click()
+        page.get_by_test_id("popover").get_by_text("SepalLength").click()
+        page.wait_for_timeout(300)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Click the Show inner box plot checkbox
+        box_checkbox = page.get_by_label("Show inner box plot")
+        box_checkbox.click(force=True)
+        page.wait_for_timeout(500)
+
+        # Check that box=True appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text("box=True")
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_strip_advanced_options_visible(self, demo_page: Page):
+        """Test that strip plot advanced options are visible."""
+        page = demo_page
+
+        # Select Strip chart type
+        select_chart_type(page, "Strip")
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify strip-specific options are visible (use button role for pickers)
+        strip_mode = page.get_by_role("button", name="Strip Mode")
+        expect(strip_mode.first).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_strip_mode_updates_code(self, demo_page: Page):
+        """Test that changing strip mode updates generated code."""
+        page = demo_page
+
+        # Select Strip chart type
+        select_chart_type(page, "Strip")
+
+        # Select X and Y columns first
+        x_picker = page.get_by_label("X", exact=True)
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("Species", exact=True).click()
+        page.wait_for_timeout(300)
+
+        y_picker = page.get_by_label("Y", exact=True)
+        y_picker.click()
+        page.get_by_test_id("popover").get_by_text("SepalLength").click()
+        page.wait_for_timeout(300)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Change Strip Mode to Overlay
+        strip_mode = page.get_by_role("button", name="Strip Mode")
+        strip_mode.click()
+        page.wait_for_timeout(300)
+        page.get_by_test_id("popover").get_by_text("Overlay", exact=True).click()
+        page.wait_for_timeout(500)
+
+        # Check that stripmode appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text('stripmode="overlay"')
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_distribution_charts_have_log_axes(self, demo_page: Page):
+        """Test that distribution charts have Log X/Y checkboxes."""
+        page = demo_page
+
+        # Select Box chart type (representative distribution chart)
+        select_chart_type(page, "Box")
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify axis config is available
+        log_x = page.get_by_label("Log X")
+        expect(log_x).to_be_visible()
+
+        log_y = page.get_by_label("Log Y")
+        expect(log_y).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_histogram_log_y_updates_code(self, demo_page: Page):
+        """Test that toggling Log Y for histogram updates generated code."""
+        page = demo_page
+
+        # Select Histogram chart type
+        select_chart_type(page, "Histogram")
+
+        # Select X column first
+        x_picker = page.get_by_role("button", name="X")
+        x_picker.click()
+        page.get_by_test_id("popover").get_by_text("SepalLength").click()
+        page.wait_for_timeout(300)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Click the Log Y checkbox
+        log_y_checkbox = page.get_by_label("Log Y")
+        log_y_checkbox.click(force=True)
+        page.wait_for_timeout(500)
+
+        # Check that log_y appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text("log_y=True")

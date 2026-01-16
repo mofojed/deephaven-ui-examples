@@ -88,6 +88,16 @@ ChartType = Literal[
 ]
 LineShape = Literal["linear", "vhv", "hvh", "vh", "hv"]
 Orientation = Literal["v", "h"]
+# Distribution chart modes
+BoxMode = Literal["group", "overlay"]
+ViolinMode = Literal["group", "overlay"]
+StripMode = Literal["group", "overlay"]
+HistBarMode = Literal["group", "overlay", "relative"]
+BarNorm = Literal["fraction", "percent"]
+HistNorm = Literal["probability", "percent", "density", "probability density"]
+HistFunc = Literal["count", "sum", "avg", "min", "max", "count_distinct", "median", "std", "var", "abs_sum"]
+PointsOption = Literal["outliers", "suspectedoutliers", "all"]
+MarginalType = Literal["histogram", "box", "violin", "rug"]
 
 
 class ChartConfig(TypedDict):
@@ -112,6 +122,21 @@ class ChartConfig(TypedDict):
     values: NotRequired[str]
     # Histogram options
     nbins: NotRequired[int]
+    histfunc: NotRequired[str]  # Aggregation function for histogram
+    histnorm: NotRequired[str]  # Normalization for histogram
+    barnorm: NotRequired[str]  # Bar normalization
+    hist_barmode: NotRequired[str]  # Bar mode for histogram (group, overlay, relative)
+    cumulative: NotRequired[bool]  # Cumulative histogram
+    range_bins: NotRequired[list[int]]  # Range for bins
+    # Box/Violin/Strip options
+    boxmode: NotRequired[str]  # group or overlay
+    violinmode: NotRequired[str]  # group or overlay
+    stripmode: NotRequired[str]  # group or overlay
+    points: NotRequired[str | bool]  # outliers, suspectedoutliers, all, or False
+    notched: NotRequired[bool]  # Show notches on box plot
+    violin_box: NotRequired[bool]  # Show box inside violin
+    # Distribution chart marginal
+    marginal: NotRequired[str]  # Marginal plot type for histogram
     # OHLC/Candlestick options
     open: NotRequired[str]
     high: NotRequired[str]
@@ -526,6 +551,33 @@ def _make_histogram(table: Table, config: ChartConfig):
         kwargs["title"] = config["title"]
     if config.get("nbins"):
         kwargs["nbins"] = config["nbins"]
+    # Advanced histogram options (Phase 11)
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("histfunc"):
+        kwargs["histfunc"] = config["histfunc"]
+    if config.get("histnorm"):
+        kwargs["histnorm"] = config["histnorm"]
+    if config.get("barnorm"):
+        kwargs["barnorm"] = config["barnorm"]
+    if config.get("hist_barmode"):
+        kwargs["barmode"] = config["hist_barmode"]
+    if config.get("cumulative"):
+        kwargs["cumulative"] = config["cumulative"]
+    if config.get("range_bins"):
+        kwargs["range_bins"] = config["range_bins"]
+    if config.get("marginal"):
+        kwargs["marginal"] = config["marginal"]
+    if config.get("text_auto"):
+        kwargs["text_auto"] = config["text_auto"]
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.histogram(table, **kwargs)
 
 
@@ -536,6 +588,23 @@ def _make_box(table: Table, config: ChartConfig):
         kwargs["by"] = config["by"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced box options (Phase 11)
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("boxmode"):
+        kwargs["boxmode"] = config["boxmode"]
+    if config.get("points"):
+        kwargs["points"] = config["points"]
+    if config.get("notched"):
+        kwargs["notched"] = config["notched"]
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.box(table, **kwargs)
 
 
@@ -546,6 +615,23 @@ def _make_violin(table: Table, config: ChartConfig):
         kwargs["by"] = config["by"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced violin options (Phase 11)
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("violinmode"):
+        kwargs["violinmode"] = config["violinmode"]
+    if config.get("points"):
+        kwargs["points"] = config["points"]
+    if config.get("violin_box"):
+        kwargs["box"] = config["violin_box"]
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.violin(table, **kwargs)
 
 
@@ -556,6 +642,19 @@ def _make_strip(table: Table, config: ChartConfig):
         kwargs["by"] = config["by"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced strip options (Phase 11)
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("stripmode"):
+        kwargs["stripmode"] = config["stripmode"]
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.strip(table, **kwargs)
 
 
@@ -1246,10 +1345,78 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
         if config.get("template"):
             params.append(f'template="{config["template"]}"')
 
-    # Histogram-specific options
+    # Histogram-specific options (Phase 11)
     if chart_type == "histogram":
-        if config.get("nbins") and config["nbins"] != 10:
+        if config.get("nbins") and config["nbins"] > 0:
             params.append(f'nbins={config["nbins"]}')
+        if config.get("histfunc") and config["histfunc"] != "count":
+            params.append(f'histfunc="{config["histfunc"]}"')
+        if config.get("histnorm"):
+            params.append(f'histnorm="{config["histnorm"]}"')
+        if config.get("barnorm"):
+            params.append(f'barnorm="{config["barnorm"]}"')
+        if config.get("hist_barmode") and config["hist_barmode"] != "relative":
+            params.append(f'barmode="{config["hist_barmode"]}"')
+        if config.get("cumulative"):
+            params.append("cumulative=True")
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Box plot options (Phase 11)
+    if chart_type == "box":
+        if config.get("boxmode") and config["boxmode"] != "group":
+            params.append(f'boxmode="{config["boxmode"]}"')
+        if config.get("points") is not None:
+            if config["points"] is False:
+                params.append("points=False")
+            elif config["points"] != "outliers":
+                params.append(f'points="{config["points"]}"')
+        if config.get("notched"):
+            params.append("notched=True")
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Violin plot options (Phase 11)
+    if chart_type == "violin":
+        if config.get("violinmode") and config["violinmode"] != "group":
+            params.append(f'violinmode="{config["violinmode"]}"')
+        if config.get("points"):
+            params.append(f'points="{config["points"]}"')
+        if config.get("violin_box"):
+            params.append("box=True")
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Strip plot options (Phase 11)
+    if chart_type == "strip":
+        if config.get("stripmode") and config["stripmode"] != "group":
+            params.append(f'stripmode="{config["stripmode"]}"')
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
 
     # Title (common to all)
     if config.get("title"):
@@ -3102,6 +3269,28 @@ def chart_builder_app() -> ui.Element:
     # Pie-specific advanced options (Phase 10)
     hole, set_hole = ui.use_state(0.0)
 
+    # Distribution chart advanced options (Phase 11)
+    # Histogram options
+    histfunc, set_histfunc = ui.use_state("count")
+    histnorm, set_histnorm = ui.use_state("")
+    barnorm, set_barnorm = ui.use_state("")
+    hist_barmode, set_hist_barmode = ui.use_state("relative")
+    cumulative, set_cumulative = ui.use_state(False)
+    nbins, set_nbins = ui.use_state(0)  # 0 = auto
+
+    # Box plot options
+    boxmode, set_boxmode = ui.use_state("group")
+    notched, set_notched = ui.use_state(False)
+    box_points, set_box_points = ui.use_state("outliers")
+
+    # Violin plot options
+    violinmode, set_violinmode = ui.use_state("group")
+    violin_box, set_violin_box = ui.use_state(False)
+    violin_points, set_violin_points = ui.use_state("")
+
+    # Strip plot options
+    stripmode, set_stripmode = ui.use_state("group")
+
     # Rendering options
     render_mode, set_render_mode = ui.use_state("webgl")
     template, set_template = ui.use_state("")
@@ -3350,8 +3539,79 @@ def chart_builder_app() -> ui.Element:
         if template:
             config["template"] = template
     elif chart_type == "histogram":
+        # Histogram advanced options (Phase 11)
         if nbins:
             config["nbins"] = nbins
+        if histfunc and histfunc != "count":
+            config["histfunc"] = histfunc
+        if histnorm:
+            config["histnorm"] = histnorm
+        if barnorm:
+            config["barnorm"] = barnorm
+        if hist_barmode and hist_barmode != "relative":
+            config["hist_barmode"] = hist_barmode
+        if cumulative:
+            config["cumulative"] = cumulative
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if color_col:
+            config["color"] = color_col
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if template:
+            config["template"] = template
+    elif chart_type == "box":
+        # Box plot advanced options (Phase 11)
+        if boxmode and boxmode != "group":
+            config["boxmode"] = boxmode
+        if box_points and box_points != "outliers":
+            config["points"] = box_points if box_points != "false" else False
+        if notched:
+            config["notched"] = notched
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if color_col:
+            config["color"] = color_col
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if template:
+            config["template"] = template
+    elif chart_type == "violin":
+        # Violin plot advanced options (Phase 11)
+        if violinmode and violinmode != "group":
+            config["violinmode"] = violinmode
+        if violin_points:
+            config["points"] = violin_points
+        if violin_box:
+            config["violin_box"] = violin_box
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if color_col:
+            config["color"] = color_col
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if template:
+            config["template"] = template
+    elif chart_type == "strip":
+        # Strip plot advanced options (Phase 11)
+        if stripmode and stripmode != "group":
+            config["stripmode"] = stripmode
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if color_col:
+            config["color"] = color_col
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if template:
+            config["template"] = template
 
     # Candlestick/OHLC config
     if chart_type in ("candlestick", "ohlc"):
@@ -4496,6 +4756,190 @@ def chart_builder_app() -> ui.Element:
                             if chart_type == "pie"
                             else None
                         ),
+                        # Histogram-specific options (Phase 11)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Histogram Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        ui.item("Count", key="count"),
+                                        ui.item("Sum", key="sum"),
+                                        ui.item("Average", key="avg"),
+                                        ui.item("Min", key="min"),
+                                        ui.item("Max", key="max"),
+                                        label="Aggregation",
+                                        selected_key=histfunc,
+                                        on_selection_change=set_histfunc,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        ui.item("(None)", key=""),
+                                        ui.item("Probability", key="probability"),
+                                        ui.item("Percent", key="percent"),
+                                        ui.item("Density", key="density"),
+                                        ui.item("Prob. Density", key="probability density"),
+                                        label="Normalization",
+                                        selected_key=histnorm,
+                                        on_selection_change=set_histnorm,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        ui.item("Stacked", key="relative"),
+                                        ui.item("Group (side by side)", key="group"),
+                                        ui.item("Overlay", key="overlay"),
+                                        label="Bar Mode",
+                                        selected_key=hist_barmode,
+                                        on_selection_change=set_hist_barmode,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        ui.item("(None)", key=""),
+                                        ui.item("Fraction", key="fraction"),
+                                        ui.item("Percent", key="percent"),
+                                        label="Bar Normalization",
+                                        selected_key=barnorm,
+                                        on_selection_change=set_barnorm,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                ui.flex(
+                                    ui.number_field(
+                                        label="Number of Bins (0=auto)",
+                                        value=nbins,
+                                        on_change=set_nbins,
+                                        min_value=0,
+                                        flex_grow=1,
+                                    ),
+                                    ui.checkbox(
+                                        "Cumulative",
+                                        is_selected=cumulative,
+                                        on_change=set_cumulative,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                    align_items="end",
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type == "histogram"
+                            else None
+                        ),
+                        # Box plot options (Phase 11)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Box Plot Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        ui.item("Group (side by side)", key="group"),
+                                        ui.item("Overlay", key="overlay"),
+                                        label="Box Mode",
+                                        selected_key=boxmode,
+                                        on_selection_change=set_boxmode,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        ui.item("Outliers only", key="outliers"),
+                                        ui.item("Suspected outliers", key="suspectedoutliers"),
+                                        ui.item("All points", key="all"),
+                                        ui.item("No points", key="false"),
+                                        label="Show Points",
+                                        selected_key=box_points,
+                                        on_selection_change=set_box_points,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                ui.checkbox(
+                                    "Notched (show confidence interval)",
+                                    is_selected=notched,
+                                    on_change=set_notched,
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type == "box"
+                            else None
+                        ),
+                        # Violin plot options (Phase 11)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Violin Plot Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        ui.item("Group (side by side)", key="group"),
+                                        ui.item("Overlay", key="overlay"),
+                                        label="Violin Mode",
+                                        selected_key=violinmode,
+                                        on_selection_change=set_violinmode,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        ui.item("(None)", key=""),
+                                        ui.item("Outliers only", key="outliers"),
+                                        ui.item("Suspected outliers", key="suspectedoutliers"),
+                                        ui.item("All points", key="all"),
+                                        label="Show Points",
+                                        selected_key=violin_points,
+                                        on_selection_change=set_violin_points,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                ui.checkbox(
+                                    "Show inner box plot",
+                                    is_selected=violin_box,
+                                    on_change=set_violin_box,
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type == "violin"
+                            else None
+                        ),
+                        # Strip plot options (Phase 11)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Strip Plot Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.picker(
+                                    ui.item("Group (side by side)", key="group"),
+                                    ui.item("Overlay", key="overlay"),
+                                    label="Strip Mode",
+                                    selected_key=stripmode,
+                                    on_selection_change=set_stripmode,
+                                    width="100%",
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type == "strip"
+                            else None
+                        ),
                         # Marginal plots (scatter only)
                         (
                             ui.flex(
@@ -4580,7 +5024,7 @@ def chart_builder_app() -> ui.Element:
                             if chart_type in ("scatter", "line", "bar")
                             else None
                         ),
-                        # Axis configuration (scatter, line, bar, area only)
+                        # Axis configuration (scatter, line, bar, area, distribution charts)
                         (
                             ui.flex(
                                 ui.text(
@@ -4601,7 +5045,7 @@ def chart_builder_app() -> ui.Element:
                                     direction="row",
                                     gap="size-200",
                                 ),
-                                # Axis titles only for scatter, line, area (not bar)
+                                # Axis titles only for scatter, line, area (not bar or distribution charts)
                                 (
                                     ui.flex(
                                         ui.text_field(
@@ -4627,7 +5071,7 @@ def chart_builder_app() -> ui.Element:
                                 gap="size-100",
                                 margin_top="size-100",
                             )
-                            if chart_type in ("scatter", "line", "bar", "area")
+                            if chart_type in ("scatter", "line", "bar", "area", "histogram", "box", "violin", "strip")
                             else None
                         ),
                         # Rendering options
@@ -4679,7 +5123,7 @@ def chart_builder_app() -> ui.Element:
                         not advanced_expanded
                     ),
                 )
-                if chart_type in ("scatter", "line", "bar", "area", "pie")
+                if chart_type in ("scatter", "line", "bar", "area", "pie", "histogram", "box", "violin", "strip")
                 else None
             ),
             # Title

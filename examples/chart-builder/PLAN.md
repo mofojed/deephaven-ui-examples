@@ -425,10 +425,18 @@ The UI will be organized into sections:
 7. **Unit Tests** - Test make_chart with advanced parameters
 8. **Update README** - Document new advanced options
 
+#### Completed Phases
+
+- **Phase 10**: ✅ Advanced Parameters - Bar/Area/Pie Charts (barmode, hole, text_auto, opacity, error bars, log axes, templates)
+- **Phase 11**: ✅ Advanced Parameters - Distribution Charts (histogram, box, violin, strip)
+  - Histogram: histfunc, histnorm, barnorm, barmode, cumulative, nbins
+  - Box: boxmode, points, notched
+  - Violin: violinmode, points, box (inner box)
+  - Strip: stripmode
+  - All: log_x, log_y, template
+
 #### Future Phases (Planned)
 
-- **Phase 10**: Advanced Parameters - Bar/Area/Pie Charts
-- **Phase 11**: Advanced Parameters - Distribution Charts (histogram, box, violin, strip)
 - **Phase 12**: Advanced Parameters - Financial Charts (candlestick, ohlc)
 - **Phase 13**: Advanced Parameters - Hierarchical Charts (treemap, sunburst, funnel)
 - **Phase 14**: Advanced Parameters - 3D/Polar/Ternary Charts
