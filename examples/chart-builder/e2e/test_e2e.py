@@ -1336,3 +1336,61 @@ class TestDistributionChartAdvancedOptionsE2E:
         # Check that log_y appears in the code
         code_area = page.locator("pre, code")
         expect(code_area.first).to_contain_text("log_y=True")
+
+
+@pytest.mark.e2e
+class TestFinancialChartAdvancedOptionsE2E:
+    """Tests for financial chart (candlestick/ohlc) advanced options (Phase 12)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_candlestick_advanced_options_visible(self, demo_page: Page):
+        """Test that candlestick advanced options are visible."""
+        page = demo_page
+
+        # Select Candlestick chart type
+        select_chart_type(page, "Candlestick")
+
+        # Switch to OHLC dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Stocks OHLC (1min)").click()
+        page.wait_for_timeout(300)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify financial chart options are visible (color pickers only)
+        expect(page.get_by_text("Financial Chart Options")).to_be_visible()
+        expect(page.get_by_text("Up Color")).to_be_visible()
+        expect(page.get_by_text("Down Color")).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_ohlc_advanced_options_visible(self, demo_page: Page):
+        """Test that OHLC advanced options are visible."""
+        page = demo_page
+
+        # Select OHLC chart type
+        select_chart_type(page, "OHLC")
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify financial chart options are visible (color pickers only)
+        expect(page.get_by_text("Financial Chart Options")).to_be_visible()
+        expect(page.get_by_text("Up Color")).to_be_visible()
+        expect(page.get_by_text("Down Color")).to_be_visible()

@@ -95,7 +95,18 @@ StripMode = Literal["group", "overlay"]
 HistBarMode = Literal["group", "overlay", "relative"]
 BarNorm = Literal["fraction", "percent"]
 HistNorm = Literal["probability", "percent", "density", "probability density"]
-HistFunc = Literal["count", "sum", "avg", "min", "max", "count_distinct", "median", "std", "var", "abs_sum"]
+HistFunc = Literal[
+    "count",
+    "sum",
+    "avg",
+    "min",
+    "max",
+    "count_distinct",
+    "median",
+    "std",
+    "var",
+    "abs_sum",
+]
 PointsOption = Literal["outliers", "suspectedoutliers", "all"]
 MarginalType = Literal["histogram", "box", "violin", "rug"]
 
@@ -142,6 +153,10 @@ class ChartConfig(TypedDict):
     high: NotRequired[str]
     low: NotRequired[str]
     close: NotRequired[str]
+    increasing_color_sequence: NotRequired[list[str]]  # Colors for up candles/bars
+    decreasing_color_sequence: NotRequired[list[str]]  # Colors for down candles/bars
+    xaxis_titles: NotRequired[str | list[str]]  # X axis title(s)
+    yaxis_titles: NotRequired[str | list[str]]  # Y axis title(s)
     # Hierarchical chart options (treemap, sunburst, icicle)
     parents: NotRequired[str]
     # 3D chart options
@@ -675,6 +690,11 @@ def _make_candlestick(table: Table, config: ChartConfig):
         "low": config["low"],
         "close": config["close"],
     }
+    # Advanced options
+    if config.get("increasing_color_sequence"):
+        kwargs["increasing_color_sequence"] = config["increasing_color_sequence"]
+    if config.get("decreasing_color_sequence"):
+        kwargs["decreasing_color_sequence"] = config["decreasing_color_sequence"]
     return dx.candlestick(table, **kwargs)
 
 
@@ -687,6 +707,11 @@ def _make_ohlc(table: Table, config: ChartConfig):
         "low": config["low"],
         "close": config["close"],
     }
+    # Advanced options
+    if config.get("increasing_color_sequence"):
+        kwargs["increasing_color_sequence"] = config["increasing_color_sequence"]
+    if config.get("decreasing_color_sequence"):
+        kwargs["decreasing_color_sequence"] = config["decreasing_color_sequence"]
     return dx.ohlc(table, **kwargs)
 
 
@@ -1418,6 +1443,17 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
         if config.get("template"):
             params.append(f'template="{config["template"]}"')
 
+    # Candlestick/OHLC options (Phase 12)
+    if chart_type in ("candlestick", "ohlc"):
+        if config.get("increasing_color_sequence"):
+            params.append(
+                f'increasing_color_sequence={_format_value(config["increasing_color_sequence"])}'
+            )
+        if config.get("decreasing_color_sequence"):
+            params.append(
+                f'decreasing_color_sequence={_format_value(config["decreasing_color_sequence"])}'
+            )
+
     # Title (common to all)
     if config.get("title"):
         params.append(f'title="{config["title"]}"')
@@ -1950,12 +1986,14 @@ def _get_column_info(table: Table) -> list[dict]:
     for col in table.columns:
         type_str = str(col.data_type)
         type_info = _get_type_info(type_str)
-        result.append({
-            "name": col.name,
-            "type": type_str,
-            "type_label": type_info["label"],
-            "icon": type_info["icon"],
-        })
+        result.append(
+            {
+                "name": col.name,
+                "type": type_str,
+                "type_label": type_info["label"],
+                "icon": type_info["icon"],
+            }
+        )
     return result
 
 
@@ -1964,24 +2002,27 @@ def _get_column_names(table: Table) -> list[str]:
     return [col.name for col in table.columns]
 
 
-def _column_picker_items(
-    columns: list[dict], include_none: bool = True
-) -> list[dict]:
+def _column_picker_items(columns: list[dict], include_none: bool = True) -> list[dict]:
     """Create picker items from column info with types and icons."""
     items = []
     if include_none:
-        items.append({
-            "key": "",
-            "label": "(None)",
-            "description": "",
-            "icon": "vsCircleSlash",
-        })
-    items.extend({
-        "key": col["name"],
-        "label": col["name"],
-        "description": col["type_label"],
-        "icon": col["icon"],
-    } for col in columns)
+        items.append(
+            {
+                "key": "",
+                "label": "(None)",
+                "description": "",
+                "icon": "vsCircleSlash",
+            }
+        )
+    items.extend(
+        {
+            "key": col["name"],
+            "label": col["name"],
+            "description": col["type_label"],
+            "icon": col["icon"],
+        }
+        for col in columns
+    )
     return items
 
 
@@ -1991,7 +2032,11 @@ def _render_column_picker_items(items: list[dict]) -> list:
         ui.item(
             ui.icon(item["icon"]),
             ui.text(item["label"]),
-            ui.text(item["description"], slot="description") if item["description"] else None,
+            (
+                ui.text(item["description"], slot="description")
+                if item["description"]
+                else None
+            ),
             key=item["key"],
             text_value=item["label"],
         )
@@ -2101,7 +2146,9 @@ def chart_builder(table: Table) -> ui.Element:
     def get_by_picker_items(index: int) -> list[dict]:
         """Get picker items for a group by dropdown, excluding already selected columns."""
         selected_at_other_indices = [c for i, c in enumerate(by_cols) if i != index]
-        available = [col for col in column_info if col["name"] not in selected_at_other_indices]
+        available = [
+            col for col in column_info if col["name"] not in selected_at_other_indices
+        ]
         return _column_picker_items(available, include_none=True)
 
     # Build configuration from state
@@ -3291,6 +3338,14 @@ def chart_builder_app() -> ui.Element:
     # Strip plot options
     stripmode, set_stripmode = ui.use_state("group")
 
+    # Financial chart advanced options (Phase 12)
+    increasing_color, set_increasing_color = ui.use_state(
+        None
+    )  # Color for up candles/bars
+    decreasing_color, set_decreasing_color = ui.use_state(
+        None
+    )  # Color for down candles/bars
+
     # Rendering options
     render_mode, set_render_mode = ui.use_state("webgl")
     template, set_template = ui.use_state("")
@@ -3362,7 +3417,9 @@ def chart_builder_app() -> ui.Element:
     def get_by_picker_items(index: int) -> list[dict]:
         """Get picker items for a group by dropdown, excluding already selected columns."""
         selected_at_other_indices = [c for i, c in enumerate(by_cols) if i != index]
-        available = [col for col in column_info if col["name"] not in selected_at_other_indices]
+        available = [
+            col for col in column_info if col["name"] not in selected_at_other_indices
+        ]
         return _column_picker_items(available, include_none=True)
 
     # Build configuration from state
@@ -3625,6 +3682,11 @@ def chart_builder_app() -> ui.Element:
             config["low"] = low_col
         if close_col:
             config["close"] = close_col
+        # Advanced options (Phase 12)
+        if increasing_color:
+            config["increasing_color_sequence"] = [increasing_color]
+        if decreasing_color:
+            config["decreasing_color_sequence"] = [decreasing_color]
 
     # Hierarchical chart config (treemap, sunburst, icicle)
     if chart_type in ("treemap", "sunburst", "icicle"):
@@ -4632,7 +4694,9 @@ def chart_builder_app() -> ui.Element:
                             ui.flex(
                                 (
                                     ui.picker(
-                                        *_render_column_picker_items(optional_column_items),
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
                                         label="Text Labels",
                                         selected_key=text_col,
                                         on_selection_change=set_text_col,
@@ -4780,7 +4844,9 @@ def chart_builder_app() -> ui.Element:
                                         ui.item("Probability", key="probability"),
                                         ui.item("Percent", key="percent"),
                                         ui.item("Density", key="density"),
-                                        ui.item("Prob. Density", key="probability density"),
+                                        ui.item(
+                                            "Prob. Density", key="probability density"
+                                        ),
                                         label="Normalization",
                                         selected_key=histnorm,
                                         on_selection_change=set_histnorm,
@@ -4855,7 +4921,10 @@ def chart_builder_app() -> ui.Element:
                                     ),
                                     ui.picker(
                                         ui.item("Outliers only", key="outliers"),
-                                        ui.item("Suspected outliers", key="suspectedoutliers"),
+                                        ui.item(
+                                            "Suspected outliers",
+                                            key="suspectedoutliers",
+                                        ),
                                         ui.item("All points", key="all"),
                                         ui.item("No points", key="false"),
                                         label="Show Points",
@@ -4897,7 +4966,10 @@ def chart_builder_app() -> ui.Element:
                                     ui.picker(
                                         ui.item("(None)", key=""),
                                         ui.item("Outliers only", key="outliers"),
-                                        ui.item("Suspected outliers", key="suspectedoutliers"),
+                                        ui.item(
+                                            "Suspected outliers",
+                                            key="suspectedoutliers",
+                                        ),
                                         ui.item("All points", key="all"),
                                         label="Show Points",
                                         selected_key=violin_points,
@@ -4938,6 +5010,42 @@ def chart_builder_app() -> ui.Element:
                                 gap="size-100",
                             )
                             if chart_type == "strip"
+                            else None
+                        ),
+                        # Financial chart options (Phase 12: candlestick/ohlc)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Financial Chart Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.flex(
+                                    ui.color_picker(
+                                        label="Up Color",
+                                        value=(
+                                            increasing_color
+                                            if increasing_color
+                                            else "#3D9970"
+                                        ),
+                                        on_change=set_increasing_color,
+                                    ),
+                                    ui.color_picker(
+                                        label="Down Color",
+                                        value=(
+                                            decreasing_color
+                                            if decreasing_color
+                                            else "#FF4136"
+                                        ),
+                                        on_change=set_decreasing_color,
+                                    ),
+                                    direction="row",
+                                    gap="size-200",
+                                    align_items="end",
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type in ("candlestick", "ohlc")
                             else None
                         ),
                         # Marginal plots (scatter only)
@@ -4981,14 +5089,18 @@ def chart_builder_app() -> ui.Element:
                                 ),
                                 ui.flex(
                                     ui.picker(
-                                        *_render_column_picker_items(optional_column_items),
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
                                         label="Error X",
                                         selected_key=error_x_col,
                                         on_selection_change=set_error_x_col,
                                         flex_grow=1,
                                     ),
                                     ui.picker(
-                                        *_render_column_picker_items(optional_column_items),
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
                                         label="Error X-",
                                         selected_key=error_x_minus_col,
                                         on_selection_change=set_error_x_minus_col,
@@ -5000,14 +5112,18 @@ def chart_builder_app() -> ui.Element:
                                 ),
                                 ui.flex(
                                     ui.picker(
-                                        *_render_column_picker_items(optional_column_items),
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
                                         label="Error Y",
                                         selected_key=error_y_col,
                                         on_selection_change=set_error_y_col,
                                         flex_grow=1,
                                     ),
                                     ui.picker(
-                                        *_render_column_picker_items(optional_column_items),
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
                                         label="Error Y-",
                                         selected_key=error_y_minus_col,
                                         on_selection_change=set_error_y_minus_col,
@@ -5071,7 +5187,17 @@ def chart_builder_app() -> ui.Element:
                                 gap="size-100",
                                 margin_top="size-100",
                             )
-                            if chart_type in ("scatter", "line", "bar", "area", "histogram", "box", "violin", "strip")
+                            if chart_type
+                            in (
+                                "scatter",
+                                "line",
+                                "bar",
+                                "area",
+                                "histogram",
+                                "box",
+                                "violin",
+                                "strip",
+                            )
                             else None
                         ),
                         # Rendering options
@@ -5123,7 +5249,20 @@ def chart_builder_app() -> ui.Element:
                         not advanced_expanded
                     ),
                 )
-                if chart_type in ("scatter", "line", "bar", "area", "pie", "histogram", "box", "violin", "strip")
+                if chart_type
+                in (
+                    "scatter",
+                    "line",
+                    "bar",
+                    "area",
+                    "pie",
+                    "histogram",
+                    "box",
+                    "violin",
+                    "strip",
+                    "candlestick",
+                    "ohlc",
+                )
                 else None
             ),
             # Title

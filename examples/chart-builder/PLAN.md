@@ -434,10 +434,13 @@ The UI will be organized into sections:
   - Violin: violinmode, points, box (inner box)
   - Strip: stripmode
   - All: log_x, log_y, template
+- **Phase 12**: ✅ Advanced Parameters - Financial Charts (candlestick, ohlc)
+  - increasing_color_sequence: Custom color for up candles/bars (with color picker UI)
+  - decreasing_color_sequence: Custom color for down candles/bars (with color picker UI)
+  - Note: xaxis_titles/yaxis_titles are NOT supported due to a bug in dx.candlestick/dx.ohlc
 
 #### Future Phases (Planned)
 
-- **Phase 12**: Advanced Parameters - Financial Charts (candlestick, ohlc)
 - **Phase 13**: Advanced Parameters - Hierarchical Charts (treemap, sunburst, funnel)
 - **Phase 14**: Advanced Parameters - 3D/Polar/Ternary Charts
 - **Phase 15**: Advanced Parameters - Map/Geo Charts
