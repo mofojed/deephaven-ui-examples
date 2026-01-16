@@ -439,9 +439,24 @@ The UI will be organized into sections:
   - decreasing_color_sequence: Custom color for down candles/bars (with color picker UI)
   - Note: xaxis_titles/yaxis_titles are NOT supported due to a bug in dx.candlestick/dx.ohlc
 
+- **Phase 13**: ✅ Advanced Parameters - Hierarchical Charts (treemap, sunburst, icicle, funnel, funnel_area)
+  - **treemap/sunburst/icicle** (shared params):
+    - `color`: Color column for categorical or continuous coloring
+    - `branchvalues`: "total" (value includes descendants) or "remainder" (value is remainder after subtracting children)
+    - `maxdepth`: Maximum number of visible hierarchy levels (-1 for all)
+    - `template`: Plotly template
+  - **funnel**:
+    - `color`: Color column
+    - `text`: Text labels column
+    - `orientation`: "v" (vertical) or "h" (horizontal)
+    - `template`: Plotly template
+  - **funnel_area**:
+    - `color`: Color column
+    - `template`: Plotly template
+  - Note: opacity, log_x, log_y omitted (less commonly used)
+
 #### Future Phases (Planned)
 
-- **Phase 13**: Advanced Parameters - Hierarchical Charts (treemap, sunburst, funnel)
 - **Phase 14**: Advanced Parameters - 3D/Polar/Ternary Charts
 - **Phase 15**: Advanced Parameters - Map/Geo Charts
 

@@ -724,6 +724,15 @@ def _make_treemap(table: Table, config: ChartConfig):
     }
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 13)
+    if config.get("hier_color"):
+        kwargs["color"] = config["hier_color"]
+    if config.get("branchvalues"):
+        kwargs["branchvalues"] = config["branchvalues"]
+    if config.get("maxdepth") is not None and config.get("maxdepth") != -1:
+        kwargs["maxdepth"] = config["maxdepth"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.treemap(table, **kwargs)
 
 
@@ -736,6 +745,15 @@ def _make_sunburst(table: Table, config: ChartConfig):
     }
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 13)
+    if config.get("hier_color"):
+        kwargs["color"] = config["hier_color"]
+    if config.get("branchvalues"):
+        kwargs["branchvalues"] = config["branchvalues"]
+    if config.get("maxdepth") is not None and config.get("maxdepth") != -1:
+        kwargs["maxdepth"] = config["maxdepth"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.sunburst(table, **kwargs)
 
 
@@ -748,6 +766,15 @@ def _make_icicle(table: Table, config: ChartConfig):
     }
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 13)
+    if config.get("hier_color"):
+        kwargs["color"] = config["hier_color"]
+    if config.get("branchvalues"):
+        kwargs["branchvalues"] = config["branchvalues"]
+    if config.get("maxdepth") is not None and config.get("maxdepth") != -1:
+        kwargs["maxdepth"] = config["maxdepth"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.icicle(table, **kwargs)
 
 
@@ -756,6 +783,21 @@ def _make_funnel(table: Table, config: ChartConfig):
     kwargs = {"x": config["x"], "y": config["y"]}
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 13)
+    if config.get("funnel_text"):
+        kwargs["text"] = config["funnel_text"]
+    if config.get("funnel_color"):
+        kwargs["color"] = config["funnel_color"]
+    if config.get("funnel_orientation"):
+        kwargs["orientation"] = config["funnel_orientation"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.funnel(table, **kwargs)
 
 
@@ -767,6 +809,13 @@ def _make_funnel_area(table: Table, config: ChartConfig):
     }
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 13)
+    if config.get("funnel_area_color"):
+        kwargs["color"] = config["funnel_area_color"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.funnel_area(table, **kwargs)
 
 
@@ -1130,6 +1179,10 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'names="{config["names"]}"')
         if config.get("values"):
             params.append(f'values="{config["values"]}"')
+        # Funnel area advanced options (Phase 13)
+        if chart_type == "funnel_area":
+            if config.get("funnel_area_color"):
+                params.append(f'color="{config["funnel_area_color"]}"')
 
     # Hierarchical charts
     if chart_type in ("treemap", "sunburst", "icicle"):
@@ -1139,6 +1192,13 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'values="{config["values"]}"')
         if config.get("parents"):
             params.append(f'parents="{config["parents"]}"')
+        # Advanced options (Phase 13)
+        if config.get("hier_color"):
+            params.append(f'color="{config["hier_color"]}"')
+        if config.get("branchvalues"):
+            params.append(f'branchvalues="{config["branchvalues"]}"')
+        if config.get("maxdepth") is not None and config.get("maxdepth") != -1:
+            params.append(f'maxdepth={config["maxdepth"]}')
 
     # OHLC/Candlestick
     if chart_type in ("candlestick", "ohlc"):
@@ -1453,6 +1513,35 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(
                 f'decreasing_color_sequence={_format_value(config["decreasing_color_sequence"])}'
             )
+
+    # Funnel chart options (Phase 13)
+    if chart_type == "funnel":
+        if config.get("funnel_text"):
+            params.append(f'text="{config["funnel_text"]}"')
+        if config.get("funnel_color"):
+            params.append(f'color="{config["funnel_color"]}"')
+        if config.get("funnel_orientation"):
+            params.append(f'orientation="{config["funnel_orientation"]}"')
+        if config.get("opacity") is not None:
+            params.append(f'opacity={config["opacity"]}')
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Funnel area advanced options (Phase 13) - opacity and template
+    if chart_type == "funnel_area":
+        if config.get("opacity") is not None:
+            params.append(f'opacity={config["opacity"]}')
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Hierarchical chart template (Phase 13)
+    if chart_type in ("treemap", "sunburst", "icicle"):
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
 
     # Title (common to all)
     if config.get("title"):
@@ -3346,6 +3435,21 @@ def chart_builder_app() -> ui.Element:
         None
     )  # Color for down candles/bars
 
+    # Hierarchical chart advanced options (Phase 13)
+    hier_color_col, set_hier_color_col = ui.use_state("")  # Color column for hierarchical
+    branchvalues, set_branchvalues = ui.use_state("")  # "total" or "remainder"
+    maxdepth, set_maxdepth = ui.use_state(-1)  # Max visible levels, -1 for all
+
+    # Funnel chart advanced options (Phase 13)
+    funnel_text_col, set_funnel_text_col = ui.use_state("")  # Text column for funnel
+    funnel_color_col, set_funnel_color_col = ui.use_state("")  # Color column for funnel
+    funnel_orientation, set_funnel_orientation = ui.use_state("")  # "v" or "h"
+
+    # Funnel area advanced options (Phase 13)
+    funnel_area_color_col, set_funnel_area_color_col = ui.use_state(
+        ""
+    )  # Color column for funnel_area
+
     # Rendering options
     render_mode, set_render_mode = ui.use_state("webgl")
     template, set_template = ui.use_state("")
@@ -3696,6 +3800,15 @@ def chart_builder_app() -> ui.Element:
             config["values"] = values_col
         if parents_col:
             config["parents"] = parents_col
+        # Advanced options (Phase 13)
+        if hier_color_col:
+            config["hier_color"] = hier_color_col
+        if branchvalues:
+            config["branchvalues"] = branchvalues
+        if maxdepth != -1:
+            config["maxdepth"] = maxdepth
+        if template:
+            config["template"] = template
 
     # Funnel chart config
     if chart_type == "funnel":
@@ -3703,6 +3816,21 @@ def chart_builder_app() -> ui.Element:
             config["x"] = x_col
         if y_col:
             config["y"] = y_col
+        # Advanced options (Phase 13)
+        if funnel_text_col:
+            config["funnel_text"] = funnel_text_col
+        if funnel_color_col:
+            config["funnel_color"] = funnel_color_col
+        if funnel_orientation:
+            config["funnel_orientation"] = funnel_orientation
+        if opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if template:
+            config["template"] = template
 
     # Funnel area chart config
     if chart_type == "funnel_area":
@@ -3710,6 +3838,13 @@ def chart_builder_app() -> ui.Element:
             config["names"] = names_col
         if values_col:
             config["values"] = values_col
+        # Advanced options (Phase 13)
+        if funnel_area_color_col:
+            config["funnel_area_color"] = funnel_area_color_col
+        if opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        if template:
+            config["template"] = template
 
     # 3D chart config (scatter_3d, line_3d)
     if chart_type in ("scatter_3d", "line_3d"):
@@ -5048,6 +5183,104 @@ def chart_builder_app() -> ui.Element:
                             if chart_type in ("candlestick", "ohlc")
                             else None
                         ),
+                        # Hierarchical chart options (Phase 13: treemap/sunburst/icicle)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Hierarchical Chart Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.picker(
+                                    *_render_column_picker_items(optional_column_items),
+                                    label="Color",
+                                    selected_key=hier_color_col,
+                                    on_selection_change=set_hier_color_col,
+                                    width="100%",
+                                ),
+                                ui.picker(
+                                    ui.item("(Default)", key=""),
+                                    ui.item(
+                                        "Total (includes descendants)", key="total"
+                                    ),
+                                    ui.item(
+                                        "Remainder (value after subtracting children)",
+                                        key="remainder",
+                                    ),
+                                    label="Branch Values",
+                                    selected_key=branchvalues,
+                                    on_selection_change=set_branchvalues,
+                                    width="100%",
+                                ),
+                                ui.number_field(
+                                    label="Max Depth (-1 for all)",
+                                    value=maxdepth,
+                                    on_change=set_maxdepth,
+                                    min_value=-1,
+                                    step=1,
+                                    width="100%",
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type in ("treemap", "sunburst", "icicle")
+                            else None
+                        ),
+                        # Funnel chart options (Phase 13)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Funnel Chart Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.picker(
+                                    *_render_column_picker_items(optional_column_items),
+                                    label="Text",
+                                    selected_key=funnel_text_col,
+                                    on_selection_change=set_funnel_text_col,
+                                    width="100%",
+                                ),
+                                ui.picker(
+                                    *_render_column_picker_items(optional_column_items),
+                                    label="Color",
+                                    selected_key=funnel_color_col,
+                                    on_selection_change=set_funnel_color_col,
+                                    width="100%",
+                                ),
+                                ui.picker(
+                                    ui.item("(Default)", key=""),
+                                    ui.item("Vertical", key="v"),
+                                    ui.item("Horizontal", key="h"),
+                                    label="Orientation",
+                                    selected_key=funnel_orientation,
+                                    on_selection_change=set_funnel_orientation,
+                                    width="100%",
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type == "funnel"
+                            else None
+                        ),
+                        # Funnel area chart options (Phase 13)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Funnel Area Chart Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.picker(
+                                    *_render_column_picker_items(optional_column_items),
+                                    label="Color",
+                                    selected_key=funnel_area_color_col,
+                                    on_selection_change=set_funnel_area_color_col,
+                                    width="100%",
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type == "funnel_area"
+                            else None
+                        ),
                         # Marginal plots (scatter only)
                         (
                             ui.flex(
@@ -5262,6 +5495,11 @@ def chart_builder_app() -> ui.Element:
                     "strip",
                     "candlestick",
                     "ohlc",
+                    "treemap",
+                    "sunburst",
+                    "icicle",
+                    "funnel",
+                    "funnel_area",
                 )
                 else None
             ),

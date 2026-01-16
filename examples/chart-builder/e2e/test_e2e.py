@@ -1394,3 +1394,214 @@ class TestFinancialChartAdvancedOptionsE2E:
         expect(page.get_by_text("Financial Chart Options")).to_be_visible()
         expect(page.get_by_text("Up Color")).to_be_visible()
         expect(page.get_by_text("Down Color")).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestHierarchicalChartAdvancedOptionsE2E:
+    """Tests for hierarchical chart (treemap/sunburst/icicle) advanced options (Phase 13)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_treemap_advanced_options_visible(self, demo_page: Page):
+        """Test that treemap advanced options are visible."""
+        page = demo_page
+
+        # Select Treemap chart type
+        select_chart_type(page, "Treemap")
+
+        # Switch to Hierarchy dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Product Hierarchy").click()
+        page.wait_for_timeout(300)
+
+        # Select required columns for treemap
+        names_picker = page.get_by_role("button", name="Names")
+        names_picker.click()
+        page.get_by_test_id("popover").get_by_text("Name").first.click()
+        page.wait_for_timeout(300)
+
+        values_picker = page.get_by_role("button", name="Values")
+        values_picker.click()
+        page.get_by_test_id("popover").get_by_text("Sales").first.click()
+        page.wait_for_timeout(300)
+
+        parents_picker = page.get_by_role("button", name="Parents")
+        parents_picker.click()
+        page.get_by_test_id("popover").get_by_text("Parent").first.click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify hierarchical chart options are visible
+        expect(page.get_by_text("Hierarchical Chart Options")).to_be_visible()
+        expect(page.get_by_text("Branch Values", exact=True)).to_be_visible()
+        expect(page.get_by_text("Max Depth (-1 for all)")).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_sunburst_branchvalues_updates_code(self, demo_page: Page):
+        """Test that setting Branch Values updates generated code for sunburst."""
+        page = demo_page
+
+        # Select Sunburst chart type
+        select_chart_type(page, "Sunburst")
+
+        # Switch to Hierarchy dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Product Hierarchy").click()
+        page.wait_for_timeout(300)
+
+        # Select required columns
+        names_picker = page.get_by_role("button", name="Names")
+        names_picker.click()
+        page.get_by_test_id("popover").get_by_text("Name").first.click()
+        page.wait_for_timeout(300)
+
+        values_picker = page.get_by_role("button", name="Values")
+        values_picker.click()
+        page.get_by_test_id("popover").get_by_text("Sales").first.click()
+        page.wait_for_timeout(300)
+
+        parents_picker = page.get_by_role("button", name="Parents")
+        parents_picker.click()
+        page.get_by_test_id("popover").get_by_text("Parent").first.click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Select Branch Values = "total"
+        branchvalues_picker = page.get_by_role("button", name="(Default) Branch Values")
+        branchvalues_picker.click()
+        page.get_by_test_id("popover").get_by_text("Total").click()
+        page.wait_for_timeout(500)
+
+        # Check that branchvalues appears in the code
+        code_area = page.locator("pre, code")
+        expect(code_area.first).to_contain_text('branchvalues="total"')
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_icicle_advanced_options_visible(self, demo_page: Page):
+        """Test that icicle advanced options are visible."""
+        page = demo_page
+
+        # Select Icicle chart type
+        select_chart_type(page, "Icicle")
+
+        # Switch to Hierarchy dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Product Hierarchy").click()
+        page.wait_for_timeout(300)
+
+        # Select required columns for icicle
+        names_picker = page.get_by_role("button", name="Names")
+        names_picker.click()
+        page.get_by_test_id("popover").get_by_text("Name").first.click()
+        page.wait_for_timeout(300)
+
+        values_picker = page.get_by_role("button", name="Values")
+        values_picker.click()
+        page.get_by_test_id("popover").get_by_text("Sales").first.click()
+        page.wait_for_timeout(300)
+
+        parents_picker = page.get_by_role("button", name="Parents")
+        parents_picker.click()
+        page.get_by_test_id("popover").get_by_text("Parent").first.click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify hierarchical chart options are visible
+        expect(page.get_by_text("Hierarchical Chart Options")).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestFunnelChartAdvancedOptionsE2E:
+    """Tests for funnel chart advanced options (Phase 13)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_funnel_advanced_options_visible(self, demo_page: Page):
+        """Test that funnel advanced options are visible."""
+        page = demo_page
+
+        # Select Funnel chart type
+        select_chart_type(page, "Funnel")
+
+        # Switch to Funnel dataset (has Stage and Count columns)
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Sales Funnel").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options - should be visible after chart type selected
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify funnel chart options are visible
+        expect(page.get_by_text("Funnel Chart Options")).to_be_visible()
+        expect(page.get_by_text("Orientation", exact=True)).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_funnel_area_advanced_options_visible(self, demo_page: Page):
+        """Test that funnel area advanced options are visible."""
+        page = demo_page
+
+        # Select Funnel Area chart type
+        select_chart_type(page, "Funnel Area")
+
+        # Switch to Funnel dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Sales Funnel").click()
+        page.wait_for_timeout(300)
+
+        # Select required columns for funnel_area (names and values)
+        names_picker = page.get_by_role("button", name="Names")
+        names_picker.click()
+        page.get_by_test_id("popover").get_by_text("Stage").first.click()
+        page.wait_for_timeout(300)
+
+        values_picker = page.get_by_role("button", name="Values")
+        values_picker.click()
+        page.get_by_test_id("popover").get_by_text("Count").first.click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify funnel area chart options are visible
+        expect(page.get_by_text("Funnel Area Chart Options")).to_be_visible()
