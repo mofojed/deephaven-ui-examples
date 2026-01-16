@@ -145,6 +145,23 @@ When making changes to this repository:
 3. **Document new components** - Add docstrings and update relevant documentation
 4. **Create PLAN.md first** - Always plan before implementing a new example
 
+## Running Code During Development
+
+When iterating on example code with a running Deephaven server, **prefer using the Deephaven MCP tools** over restarting the server:
+
+1. **Use `mcp_deephaven_vs__runCodeFromUri`** to execute updated Python files directly on the running server
+2. This allows you to make changes to `app.py`, run the code, and see changes immediately without restarting
+3. After running updated code, refresh the iframe in the browser to see the changes
+
+Example workflow:
+1. Start the server: `python scripts/run_example.py example-name`
+2. Open the iframe URL in the browser
+3. Make code changes to `app.py`
+4. Run the updated code using `mcp_deephaven_vs__runCodeFromUri` with the file URI
+5. Refresh the iframe to see changes
+
+This is much faster than restarting the server for each change.
+
 ## Running Tests
 
 ### Unit Tests
