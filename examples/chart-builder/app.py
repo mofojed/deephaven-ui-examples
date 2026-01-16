@@ -3436,7 +3436,9 @@ def chart_builder_app() -> ui.Element:
     )  # Color for down candles/bars
 
     # Hierarchical chart advanced options (Phase 13)
-    hier_color_col, set_hier_color_col = ui.use_state("")  # Color column for hierarchical
+    hier_color_col, set_hier_color_col = ui.use_state(
+        ""
+    )  # Color column for hierarchical
     branchvalues, set_branchvalues = ui.use_state("")  # "total" or "remainder"
     maxdepth, set_maxdepth = ui.use_state(-1)  # Max visible levels, -1 for all
 

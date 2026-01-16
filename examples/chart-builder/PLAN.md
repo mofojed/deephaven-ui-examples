@@ -435,6 +435,7 @@ The UI will be organized into sections:
   - Strip: stripmode
   - All: log_x, log_y, template
 - **Phase 12**: ✅ Advanced Parameters - Financial Charts (candlestick, ohlc)
+
   - increasing_color_sequence: Custom color for up candles/bars (with color picker UI)
   - decreasing_color_sequence: Custom color for down candles/bars (with color picker UI)
   - Note: xaxis_titles/yaxis_titles are NOT supported due to a bug in dx.candlestick/dx.ohlc
