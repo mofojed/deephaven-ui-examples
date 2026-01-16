@@ -1606,3 +1606,388 @@ class TestFunnelChartAdvancedOptionsE2E:
 
         # Verify funnel area chart options are visible
         expect(page.get_by_text("Funnel Area Chart Options")).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestScatter3dAdvancedOptionsE2E:
+    """Tests for 3D scatter chart advanced options (Phase 14)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_3d_advanced_options_visible(self, demo_page: Page):
+        """Test that scatter_3d advanced options are visible."""
+        page = demo_page
+
+        # Select Scatter 3D chart type
+        select_chart_type(page, "Scatter 3D")
+
+        # Switch to 3D dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("3D Points").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify 3D chart options are visible
+        expect(page.get_by_text("3D Chart Options")).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_3d_log_z_visible(self, demo_page: Page):
+        """Test that Log Z checkbox is visible for 3D charts."""
+        page = demo_page
+
+        # Select Scatter 3D chart type
+        select_chart_type(page, "Scatter 3D")
+
+        # Switch to 3D dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("3D Points").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify Log Z is visible under Axis Configuration
+        expect(page.get_by_text("Log Z", exact=True)).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_3d_error_z_visible(self, demo_page: Page):
+        """Test that Error Z pickers are visible for 3D charts."""
+        page = demo_page
+
+        # Select Scatter 3D chart type
+        select_chart_type(page, "Scatter 3D")
+
+        # Switch to 3D dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("3D Points").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify Error Z pickers are visible
+        expect(page.get_by_text("Error Z", exact=True)).to_be_visible()
+        expect(page.get_by_text("Error Z-", exact=True)).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestLine3dAdvancedOptionsE2E:
+    """Tests for 3D line chart advanced options (Phase 14)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_3d_markers_visible(self, demo_page: Page):
+        """Test that markers checkbox is visible for Line 3D charts."""
+        page = demo_page
+
+        # Select Line 3D chart type
+        select_chart_type(page, "Line 3D")
+
+        # Switch to 3D dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("3D Points").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify markers checkbox is visible
+        expect(page.get_by_text("Show Markers", exact=True)).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestScatterPolarAdvancedOptionsE2E:
+    """Tests for polar scatter chart advanced options (Phase 14)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_polar_advanced_options_visible(self, demo_page: Page):
+        """Test that scatter_polar advanced options are visible."""
+        page = demo_page
+
+        # Select Scatter Polar chart type
+        select_chart_type(page, "Scatter Polar")
+
+        # Switch to Polar dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Polar Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify polar chart options are visible
+        expect(page.get_by_text("Polar Chart Options")).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_polar_direction_visible(self, demo_page: Page):
+        """Test that Direction picker is visible for polar charts."""
+        page = demo_page
+
+        # Select Scatter Polar chart type
+        select_chart_type(page, "Scatter Polar")
+
+        # Switch to Polar dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Polar Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify Polar Chart Options header is visible (Direction picker is inside this section)
+        expect(page.get_by_text("Polar Chart Options")).to_be_visible()
+        # Verify Direction picker options are available (check the (Default) option that's unique to this picker)
+        expect(page.get_by_label("Direction(Default)")).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_polar_start_angle_visible(self, demo_page: Page):
+        """Test that Start Angle field is visible for polar charts."""
+        page = demo_page
+
+        # Select Scatter Polar chart type
+        select_chart_type(page, "Scatter Polar")
+
+        # Switch to Polar dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Polar Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify Start Angle field is visible
+        expect(page.get_by_text("Start Angle (degrees)", exact=True)).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_polar_log_r_visible(self, demo_page: Page):
+        """Test that Log R checkbox is visible for polar charts."""
+        page = demo_page
+
+        # Select Scatter Polar chart type
+        select_chart_type(page, "Scatter Polar")
+
+        # Switch to Polar dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Polar Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify Log R checkbox is visible
+        expect(page.get_by_text("Log R (Radial Axis)", exact=True)).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestLinePolarAdvancedOptionsE2E:
+    """Tests for polar line chart advanced options (Phase 14)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_polar_line_close_visible(self, demo_page: Page):
+        """Test that Close Line Shape checkbox is visible for line_polar."""
+        page = demo_page
+
+        # Select Line Polar chart type
+        select_chart_type(page, "Line Polar")
+
+        # Switch to Polar dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Polar Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify Close Line Shape checkbox is visible
+        expect(page.get_by_text("Close Line Shape", exact=True)).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_polar_markers_visible(self, demo_page: Page):
+        """Test that markers checkbox is visible for line_polar."""
+        page = demo_page
+
+        # Select Line Polar chart type
+        select_chart_type(page, "Line Polar")
+
+        # Switch to Polar dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Polar Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify markers checkbox is visible
+        expect(page.get_by_text("Show Markers", exact=True)).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestScatterTernaryAdvancedOptionsE2E:
+    """Tests for ternary scatter chart advanced options (Phase 14)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_ternary_advanced_options_visible(self, demo_page: Page):
+        """Test that scatter_ternary advanced options are visible."""
+        page = demo_page
+
+        # Select Scatter Ternary chart type
+        select_chart_type(page, "Scatter Ternary")
+
+        # Switch to Ternary dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Ternary Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify ternary chart options are visible
+        expect(page.get_by_text("Ternary Chart Options")).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestLineTernaryAdvancedOptionsE2E:
+    """Tests for ternary line chart advanced options (Phase 14)."""
+
+    @pytest.fixture
+    def demo_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_ternary_line_close_visible(self, demo_page: Page):
+        """Test that Close Line Shape checkbox is visible for line_ternary."""
+        page = demo_page
+
+        # Select Line Ternary chart type
+        select_chart_type(page, "Line Ternary")
+
+        # Switch to Ternary dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Ternary Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify Close Line Shape checkbox is visible
+        expect(page.get_by_text("Close Line Shape", exact=True)).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_ternary_markers_visible(self, demo_page: Page):
+        """Test that markers checkbox is visible for line_ternary."""
+        page = demo_page
+
+        # Select Line Ternary chart type
+        select_chart_type(page, "Line Ternary")
+
+        # Switch to Ternary dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Ternary Data").click()
+        page.wait_for_timeout(500)
+
+        # Expand Advanced Options
+        advanced_options = page.get_by_role("button", name="Advanced Options")
+        advanced_options.click()
+        page.wait_for_timeout(500)
+
+        # Verify markers checkbox is visible
+        expect(page.get_by_text("Show Markers", exact=True)).to_be_visible()

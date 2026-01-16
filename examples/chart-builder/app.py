@@ -8,7 +8,7 @@ All code is in a single file to work with Deephaven's exec() pattern.
 
 from __future__ import annotations
 
-from typing import Literal, TypedDict, NotRequired, TYPE_CHECKING
+from typing import Literal, TypedDict, NotRequired, TYPE_CHECKING, cast
 
 import deephaven.plot.express as dx
 from deephaven import ui
@@ -161,13 +161,24 @@ class ChartConfig(TypedDict):
     parents: NotRequired[str]
     # 3D chart options
     z: NotRequired[str]
+    log_z: NotRequired[bool]  # Logarithmic Z axis
+    range_z: NotRequired[list[float]]  # Z axis range
+    error_z: NotRequired[str]  # Error Z column
+    error_z_minus: NotRequired[str]  # Error Z- column (asymmetric)
     # Polar chart options
     r: NotRequired[str]
     theta: NotRequired[str]
+    polar_direction: NotRequired[Literal["clockwise", "counterclockwise"]]
+    polar_start_angle: NotRequired[int]  # Start angle in degrees
+    polar_log_r: NotRequired[bool]  # Logarithmic radial axis
+    polar_line_close: NotRequired[bool]  # Close line shape
+    polar_range_r: NotRequired[list[float]]  # Radial axis range
+    polar_range_theta: NotRequired[list[float]]  # Angular axis range
     # Ternary chart options
     a: NotRequired[str]
     b: NotRequired[str]
     c: NotRequired[str]
+    ternary_line_close: NotRequired[bool]  # Close line shape
     # Timeline chart options
     x_start: NotRequired[str]
     x_end: NotRequired[str]
@@ -828,8 +839,43 @@ def _make_scatter_3d(table: Table, config: ChartConfig):
         kwargs["size"] = config["size"]
     if config.get("color"):
         kwargs["color"] = config["color"]
+    if config.get("symbol"):
+        kwargs["symbol"] = config["symbol"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 14)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("error_x"):
+        kwargs["error_x"] = config["error_x"]
+    if config.get("error_x_minus"):
+        kwargs["error_x_minus"] = config["error_x_minus"]
+    if config.get("error_y"):
+        kwargs["error_y"] = config["error_y"]
+    if config.get("error_y_minus"):
+        kwargs["error_y_minus"] = config["error_y_minus"]
+    if config.get("error_z"):
+        kwargs["error_z"] = config["error_z"]
+    if config.get("error_z_minus"):
+        kwargs["error_z_minus"] = config["error_z_minus"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("log_z"):
+        kwargs["log_z"] = config["log_z"]
+    if config.get("range_x"):
+        kwargs["range_x"] = config["range_x"]
+    if config.get("range_y"):
+        kwargs["range_y"] = config["range_y"]
+    if config.get("range_z"):
+        kwargs["range_z"] = config["range_z"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.scatter_3d(table, **kwargs)
 
 
@@ -838,8 +884,49 @@ def _make_line_3d(table: Table, config: ChartConfig):
     kwargs = {"x": config["x"], "y": config["y"], "z": config["z"]}
     if config.get("by"):
         kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("symbol"):
+        kwargs["symbol"] = config["symbol"]
+    if config.get("line_shape"):
+        kwargs["line_dash"] = config["line_shape"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    if config.get("markers"):
+        kwargs["markers"] = config["markers"]
+    # Advanced options (Phase 14)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("error_x"):
+        kwargs["error_x"] = config["error_x"]
+    if config.get("error_x_minus"):
+        kwargs["error_x_minus"] = config["error_x_minus"]
+    if config.get("error_y"):
+        kwargs["error_y"] = config["error_y"]
+    if config.get("error_y_minus"):
+        kwargs["error_y_minus"] = config["error_y_minus"]
+    if config.get("error_z"):
+        kwargs["error_z"] = config["error_z"]
+    if config.get("error_z_minus"):
+        kwargs["error_z_minus"] = config["error_z_minus"]
+    if config.get("log_x"):
+        kwargs["log_x"] = config["log_x"]
+    if config.get("log_y"):
+        kwargs["log_y"] = config["log_y"]
+    if config.get("log_z"):
+        kwargs["log_z"] = config["log_z"]
+    if config.get("range_x"):
+        kwargs["range_x"] = config["range_x"]
+    if config.get("range_y"):
+        kwargs["range_y"] = config["range_y"]
+    if config.get("range_z"):
+        kwargs["range_z"] = config["range_z"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.line_3d(table, **kwargs)
 
 
@@ -852,8 +939,31 @@ def _make_scatter_polar(table: Table, config: ChartConfig):
         kwargs["size"] = config["size"]
     if config.get("color"):
         kwargs["color"] = config["color"]
+    if config.get("symbol"):
+        kwargs["symbol"] = config["symbol"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 14)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("polar_direction"):
+        kwargs["direction"] = config["polar_direction"]
+    if config.get("polar_start_angle") is not None:
+        kwargs["start_angle"] = config["polar_start_angle"]
+    if config.get("polar_log_r"):
+        kwargs["log_r"] = config["polar_log_r"]
+    if config.get("polar_range_r"):
+        kwargs["range_r"] = config["polar_range_r"]
+    if config.get("polar_range_theta"):
+        kwargs["range_theta"] = config["polar_range_theta"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
+    if config.get("render_mode"):
+        kwargs["render_mode"] = config["render_mode"]
     return dx.scatter_polar(table, **kwargs)
 
 
@@ -862,8 +972,39 @@ def _make_line_polar(table: Table, config: ChartConfig):
     kwargs = {"r": config["r"], "theta": config["theta"]}
     if config.get("by"):
         kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("symbol"):
+        kwargs["symbol"] = config["symbol"]
+    if config.get("line_shape"):
+        kwargs["line_shape"] = config["line_shape"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    if config.get("markers"):
+        kwargs["markers"] = config["markers"]
+    # Advanced options (Phase 14)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("polar_direction"):
+        kwargs["direction"] = config["polar_direction"]
+    if config.get("polar_start_angle") is not None:
+        kwargs["start_angle"] = config["polar_start_angle"]
+    if config.get("polar_log_r"):
+        kwargs["log_r"] = config["polar_log_r"]
+    if config.get("polar_line_close"):
+        kwargs["line_close"] = config["polar_line_close"]
+    if config.get("polar_range_r"):
+        kwargs["range_r"] = config["polar_range_r"]
+    if config.get("polar_range_theta"):
+        kwargs["range_theta"] = config["polar_range_theta"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
+    if config.get("render_mode"):
+        kwargs["render_mode"] = config["render_mode"]
     return dx.line_polar(table, **kwargs)
 
 
@@ -876,8 +1017,19 @@ def _make_scatter_ternary(table: Table, config: ChartConfig):
         kwargs["size"] = config["size"]
     if config.get("color"):
         kwargs["color"] = config["color"]
+    if config.get("symbol"):
+        kwargs["symbol"] = config["symbol"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 14)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.scatter_ternary(table, **kwargs)
 
 
@@ -886,8 +1038,27 @@ def _make_line_ternary(table: Table, config: ChartConfig):
     kwargs = {"a": config["a"], "b": config["b"], "c": config["c"]}
     if config.get("by"):
         kwargs["by"] = config["by"]
+    if config.get("size"):
+        kwargs["size"] = config["size"]
+    if config.get("color"):
+        kwargs["color"] = config["color"]
+    if config.get("symbol"):
+        kwargs["symbol"] = config["symbol"]
+    if config.get("line_shape"):
+        kwargs["line_shape"] = config["line_shape"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    if config.get("markers"):
+        kwargs["markers"] = config["markers"]
+    # Advanced options (Phase 14)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("ternary_line_close"):
+        kwargs["line_close"] = config["ternary_line_close"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.line_ternary(table, **kwargs)
 
 
@@ -1540,6 +1711,106 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
 
     # Hierarchical chart template (Phase 13)
     if chart_type in ("treemap", "sunburst", "icicle"):
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # 3D chart options (Phase 14)
+    if chart_type in ("scatter_3d", "line_3d"):
+        # Text and hover
+        if config.get("text"):
+            params.append(f'text="{config["text"]}"')
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        # Line_3d specific
+        if chart_type == "line_3d":
+            if config.get("markers"):
+                params.append("markers=True")
+            if config.get("line_shape"):
+                params.append(f'line_dash="{config["line_shape"]}"')
+        # Scatter_3d specific
+        if chart_type == "scatter_3d":
+            if config.get("opacity") is not None and config["opacity"] != 1.0:
+                params.append(f'opacity={config["opacity"]}')
+        # Error bars
+        if config.get("error_x"):
+            params.append(f'error_x="{config["error_x"]}"')
+        if config.get("error_x_minus"):
+            params.append(f'error_x_minus="{config["error_x_minus"]}"')
+        if config.get("error_y"):
+            params.append(f'error_y="{config["error_y"]}"')
+        if config.get("error_y_minus"):
+            params.append(f'error_y_minus="{config["error_y_minus"]}"')
+        if config.get("error_z"):
+            params.append(f'error_z="{config["error_z"]}"')
+        if config.get("error_z_minus"):
+            params.append(f'error_z_minus="{config["error_z_minus"]}"')
+        # Axis configuration
+        if config.get("log_x"):
+            params.append("log_x=True")
+        if config.get("log_y"):
+            params.append("log_y=True")
+        if config.get("log_z"):
+            params.append("log_z=True")
+        # Template
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Polar chart options (Phase 14)
+    if chart_type in ("scatter_polar", "line_polar"):
+        # Text and hover
+        if config.get("text"):
+            params.append(f'text="{config["text"]}"')
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        # Line_polar specific
+        if chart_type == "line_polar":
+            if config.get("markers"):
+                params.append("markers=True")
+            if config.get("line_shape"):
+                params.append(f'line_shape="{config["line_shape"]}"')
+            if config.get("polar_line_close"):
+                params.append("line_close=True")
+        # Scatter_polar specific
+        if chart_type == "scatter_polar":
+            if config.get("opacity") is not None and config["opacity"] != 1.0:
+                params.append(f'opacity={config["opacity"]}')
+        # Polar-specific options
+        if config.get("polar_direction"):
+            params.append(f'direction="{config["polar_direction"]}"')
+        if config.get("polar_start_angle") is not None and config["polar_start_angle"] != 90:
+            params.append(f'start_angle={config["polar_start_angle"]}')
+        if config.get("polar_log_r"):
+            params.append("log_r=True")
+        if config.get("polar_range_r"):
+            params.append(f'range_r={_format_value(config["polar_range_r"])}')
+        if config.get("polar_range_theta"):
+            params.append(f'range_theta={_format_value(config["polar_range_theta"])}')
+        # Rendering
+        if config.get("render_mode") and config["render_mode"] != "webgl":
+            params.append(f'render_mode="{config["render_mode"]}"')
+        if config.get("template"):
+            params.append(f'template="{config["template"]}"')
+
+    # Ternary chart options (Phase 14)
+    if chart_type in ("scatter_ternary", "line_ternary"):
+        # Text and hover
+        if config.get("text"):
+            params.append(f'text="{config["text"]}"')
+        if config.get("hover_name"):
+            params.append(f'hover_name="{config["hover_name"]}"')
+        # Line_ternary specific
+        if chart_type == "line_ternary":
+            if config.get("markers"):
+                params.append("markers=True")
+            if config.get("line_shape"):
+                params.append(f'line_shape="{config["line_shape"]}"')
+            if config.get("ternary_line_close"):
+                params.append("line_close=True")
+        # Scatter_ternary specific
+        if chart_type == "scatter_ternary":
+            if config.get("opacity") is not None and config["opacity"] != 1.0:
+                params.append(f'opacity={config["opacity"]}')
+        # Template
         if config.get("template"):
             params.append(f'template="{config["template"]}"')
 
@@ -3451,6 +3722,28 @@ def chart_builder_app() -> ui.Element:
         ""
     )  # Color column for funnel_area
 
+    # 3D chart advanced options (Phase 14)
+    log_z, set_log_z = ui.use_state(False)  # Logarithmic Z axis
+    error_z_col, set_error_z_col = ui.use_state("")  # Error Z column
+    error_z_minus_col, set_error_z_minus_col = ui.use_state("")  # Error Z- column
+
+    # Polar chart advanced options (Phase 14)
+    polar_direction, set_polar_direction = ui.use_state("")  # "clockwise" or "counterclockwise"
+    polar_start_angle, set_polar_start_angle = ui.use_state(90)  # Start angle in degrees
+    polar_log_r, set_polar_log_r = ui.use_state(False)  # Logarithmic radial axis
+    polar_line_close, set_polar_line_close = ui.use_state(False)  # Close line shape
+    polar_range_r_min, set_polar_range_r_min = ui.use_state(cast(float | None, None))
+    polar_range_r_max, set_polar_range_r_max = ui.use_state(cast(float | None, None))
+    polar_range_theta_min, set_polar_range_theta_min = ui.use_state(
+        cast(float | None, None)
+    )
+    polar_range_theta_max, set_polar_range_theta_max = ui.use_state(
+        cast(float | None, None)
+    )
+
+    # Ternary chart advanced options (Phase 14)
+    ternary_line_close, set_ternary_line_close = ui.use_state(False)  # Close line shape
+
     # Rendering options
     render_mode, set_render_mode = ui.use_state("webgl")
     template, set_template = ui.use_state("")
@@ -3861,6 +4154,39 @@ def chart_builder_app() -> ui.Element:
             config["size"] = size_col
         if color_col:
             config["color"] = color_col
+        if symbol_col:
+            config["symbol"] = symbol_col
+        # Advanced options (Phase 14)
+        if text_col:
+            config["text"] = text_col
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if chart_type == "scatter_3d" and opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        if chart_type == "line_3d" and markers:
+            config["markers"] = markers
+        if chart_type == "line_3d" and line_shape:
+            config["line_shape"] = line_shape
+        if error_x_col:
+            config["error_x"] = error_x_col
+        if error_x_minus_col:
+            config["error_x_minus"] = error_x_minus_col
+        if error_y_col:
+            config["error_y"] = error_y_col
+        if error_y_minus_col:
+            config["error_y_minus"] = error_y_minus_col
+        if error_z_col:
+            config["error_z"] = error_z_col
+        if error_z_minus_col:
+            config["error_z_minus"] = error_z_minus_col
+        if log_x:
+            config["log_x"] = log_x
+        if log_y:
+            config["log_y"] = log_y
+        if log_z:
+            config["log_z"] = log_z
+        if template:
+            config["template"] = template
 
     # Polar chart config (scatter_polar, line_polar)
     if chart_type in ("scatter_polar", "line_polar"):
@@ -3874,6 +4200,35 @@ def chart_builder_app() -> ui.Element:
             config["size"] = size_col
         if color_col:
             config["color"] = color_col
+        if symbol_col:
+            config["symbol"] = symbol_col
+        # Advanced options (Phase 14)
+        if text_col:
+            config["text"] = text_col
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if chart_type == "scatter_polar" and opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        if chart_type == "line_polar" and markers:
+            config["markers"] = markers
+        if chart_type == "line_polar" and line_shape:
+            config["line_shape"] = line_shape
+        if polar_direction:
+            config["polar_direction"] = polar_direction
+        if polar_start_angle is not None and polar_start_angle != 90:
+            config["polar_start_angle"] = polar_start_angle
+        if polar_log_r:
+            config["polar_log_r"] = polar_log_r
+        if chart_type == "line_polar" and polar_line_close:
+            config["polar_line_close"] = polar_line_close
+        if polar_range_r_min is not None and polar_range_r_max is not None:
+            config["polar_range_r"] = [polar_range_r_min, polar_range_r_max]
+        if polar_range_theta_min is not None and polar_range_theta_max is not None:
+            config["polar_range_theta"] = [polar_range_theta_min, polar_range_theta_max]
+        if template:
+            config["template"] = template
+        if render_mode and render_mode != "webgl":
+            config["render_mode"] = render_mode
 
     # Ternary chart config (scatter_ternary, line_ternary)
     if chart_type in ("scatter_ternary", "line_ternary"):
@@ -3889,6 +4244,23 @@ def chart_builder_app() -> ui.Element:
             config["size"] = size_col
         if color_col:
             config["color"] = color_col
+        if symbol_col:
+            config["symbol"] = symbol_col
+        # Advanced options (Phase 14)
+        if text_col:
+            config["text"] = text_col
+        if hover_name_col:
+            config["hover_name"] = hover_name_col
+        if chart_type == "scatter_ternary" and opacity is not None and opacity != 1.0:
+            config["opacity"] = opacity
+        if chart_type == "line_ternary" and markers:
+            config["markers"] = markers
+        if chart_type == "line_ternary" and line_shape:
+            config["line_shape"] = line_shape
+        if chart_type == "line_ternary" and ternary_line_close:
+            config["ternary_line_close"] = ternary_line_close
+        if template:
+            config["template"] = template
 
     # Timeline chart config
     if chart_type == "timeline":
@@ -5282,6 +5654,394 @@ def chart_builder_app() -> ui.Element:
                             if chart_type == "funnel_area"
                             else None
                         ),
+                        # 3D chart options (Phase 14)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "3D Chart Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.picker(
+                                    *_render_column_picker_items(optional_column_items),
+                                    label="Symbol",
+                                    selected_key=symbol_col,
+                                    on_selection_change=set_symbol_col,
+                                    width="100%",
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Text",
+                                        selected_key=text_col,
+                                        on_selection_change=set_text_col,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Hover Name",
+                                        selected_key=hover_name_col,
+                                        on_selection_change=set_hover_name_col,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                # Markers and line shape for line_3d
+                                (
+                                    ui.flex(
+                                        ui.checkbox(
+                                            "Show Markers",
+                                            is_selected=markers,
+                                            on_change=set_markers,
+                                        ),
+                                        ui.picker(
+                                            ui.item("(Default)", key=""),
+                                            ui.item("Linear", key="linear"),
+                                            ui.item("Spline", key="spline"),
+                                            label="Line Dash",
+                                            selected_key=line_shape,
+                                            on_selection_change=set_line_shape,
+                                            flex_grow=1,
+                                        ),
+                                        direction="row",
+                                        gap="size-100",
+                                        align_items="center",
+                                        width="100%",
+                                    )
+                                    if chart_type == "line_3d"
+                                    else None
+                                ),
+                                # Opacity for scatter_3d
+                                (
+                                    ui.slider(
+                                        label="Opacity",
+                                        value=opacity,
+                                        on_change=set_opacity,
+                                        min_value=0.1,
+                                        max_value=1.0,
+                                        step=0.1,
+                                        width="100%",
+                                    )
+                                    if chart_type == "scatter_3d"
+                                    else None
+                                ),
+                                # Error bars
+                                ui.text(
+                                    "Error Bars",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Error X",
+                                        selected_key=error_x_col,
+                                        on_selection_change=set_error_x_col,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Error X-",
+                                        selected_key=error_x_minus_col,
+                                        on_selection_change=set_error_x_minus_col,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Error Y",
+                                        selected_key=error_y_col,
+                                        on_selection_change=set_error_y_col,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Error Y-",
+                                        selected_key=error_y_minus_col,
+                                        on_selection_change=set_error_y_minus_col,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Error Z",
+                                        selected_key=error_z_col,
+                                        on_selection_change=set_error_z_col,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Error Z-",
+                                        selected_key=error_z_minus_col,
+                                        on_selection_change=set_error_z_minus_col,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                # Axis configuration
+                                ui.text(
+                                    "Axis Configuration",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.flex(
+                                    ui.checkbox(
+                                        "Log X",
+                                        is_selected=log_x,
+                                        on_change=set_log_x,
+                                    ),
+                                    ui.checkbox(
+                                        "Log Y",
+                                        is_selected=log_y,
+                                        on_change=set_log_y,
+                                    ),
+                                    ui.checkbox(
+                                        "Log Z",
+                                        is_selected=log_z,
+                                        on_change=set_log_z,
+                                    ),
+                                    direction="row",
+                                    gap="size-200",
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type in ("scatter_3d", "line_3d")
+                            else None
+                        ),
+                        # Polar chart options (Phase 14)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Polar Chart Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.picker(
+                                    *_render_column_picker_items(optional_column_items),
+                                    label="Symbol",
+                                    selected_key=symbol_col,
+                                    on_selection_change=set_symbol_col,
+                                    width="100%",
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Text",
+                                        selected_key=text_col,
+                                        on_selection_change=set_text_col,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Hover Name",
+                                        selected_key=hover_name_col,
+                                        on_selection_change=set_hover_name_col,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                # Markers and line shape for line_polar
+                                (
+                                    ui.flex(
+                                        ui.checkbox(
+                                            "Show Markers",
+                                            is_selected=markers,
+                                            on_change=set_markers,
+                                        ),
+                                        ui.picker(
+                                            ui.item("(Default)", key=""),
+                                            ui.item("Linear", key="linear"),
+                                            ui.item("Spline", key="spline"),
+                                            label="Line Shape",
+                                            selected_key=line_shape,
+                                            on_selection_change=set_line_shape,
+                                            flex_grow=1,
+                                        ),
+                                        direction="row",
+                                        gap="size-100",
+                                        align_items="center",
+                                        width="100%",
+                                    )
+                                    if chart_type == "line_polar"
+                                    else None
+                                ),
+                                # Opacity for scatter_polar
+                                (
+                                    ui.slider(
+                                        label="Opacity",
+                                        value=opacity,
+                                        on_change=set_opacity,
+                                        min_value=0.1,
+                                        max_value=1.0,
+                                        step=0.1,
+                                        width="100%",
+                                    )
+                                    if chart_type == "scatter_polar"
+                                    else None
+                                ),
+                                # Line close for line_polar
+                                (
+                                    ui.checkbox(
+                                        "Close Line Shape",
+                                        is_selected=polar_line_close,
+                                        on_change=set_polar_line_close,
+                                    )
+                                    if chart_type == "line_polar"
+                                    else None
+                                ),
+                                # Polar-specific options
+                                ui.picker(
+                                    ui.item("(Default)", key=""),
+                                    ui.item("Clockwise", key="clockwise"),
+                                    ui.item("Counter-clockwise", key="counterclockwise"),
+                                    label="Direction",
+                                    selected_key=polar_direction,
+                                    on_selection_change=set_polar_direction,
+                                    width="100%",
+                                ),
+                                ui.number_field(
+                                    label="Start Angle (degrees)",
+                                    value=polar_start_angle,
+                                    on_change=set_polar_start_angle,
+                                    min_value=0,
+                                    max_value=360,
+                                    step=15,
+                                    width="100%",
+                                ),
+                                ui.checkbox(
+                                    "Log R (Radial Axis)",
+                                    is_selected=polar_log_r,
+                                    on_change=set_polar_log_r,
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type in ("scatter_polar", "line_polar")
+                            else None
+                        ),
+                        # Ternary chart options (Phase 14)
+                        (
+                            ui.flex(
+                                ui.text(
+                                    "Ternary Chart Options",
+                                    UNSAFE_style={"fontWeight": "bold"},
+                                ),
+                                ui.picker(
+                                    *_render_column_picker_items(optional_column_items),
+                                    label="Symbol",
+                                    selected_key=symbol_col,
+                                    on_selection_change=set_symbol_col,
+                                    width="100%",
+                                ),
+                                ui.flex(
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Text",
+                                        selected_key=text_col,
+                                        on_selection_change=set_text_col,
+                                        flex_grow=1,
+                                    ),
+                                    ui.picker(
+                                        *_render_column_picker_items(
+                                            optional_column_items
+                                        ),
+                                        label="Hover Name",
+                                        selected_key=hover_name_col,
+                                        on_selection_change=set_hover_name_col,
+                                        flex_grow=1,
+                                    ),
+                                    direction="row",
+                                    gap="size-100",
+                                    width="100%",
+                                ),
+                                # Markers and line shape for line_ternary
+                                (
+                                    ui.flex(
+                                        ui.checkbox(
+                                            "Show Markers",
+                                            is_selected=markers,
+                                            on_change=set_markers,
+                                        ),
+                                        ui.picker(
+                                            ui.item("(Default)", key=""),
+                                            ui.item("Linear", key="linear"),
+                                            ui.item("Spline", key="spline"),
+                                            label="Line Shape",
+                                            selected_key=line_shape,
+                                            on_selection_change=set_line_shape,
+                                            flex_grow=1,
+                                        ),
+                                        direction="row",
+                                        gap="size-100",
+                                        align_items="center",
+                                        width="100%",
+                                    )
+                                    if chart_type == "line_ternary"
+                                    else None
+                                ),
+                                # Opacity for scatter_ternary
+                                (
+                                    ui.slider(
+                                        label="Opacity",
+                                        value=opacity,
+                                        on_change=set_opacity,
+                                        min_value=0.1,
+                                        max_value=1.0,
+                                        step=0.1,
+                                        width="100%",
+                                    )
+                                    if chart_type == "scatter_ternary"
+                                    else None
+                                ),
+                                # Line close for line_ternary
+                                (
+                                    ui.checkbox(
+                                        "Close Line Shape",
+                                        is_selected=ternary_line_close,
+                                        on_change=set_ternary_line_close,
+                                    )
+                                    if chart_type == "line_ternary"
+                                    else None
+                                ),
+                                direction="column",
+                                gap="size-100",
+                            )
+                            if chart_type in ("scatter_ternary", "line_ternary")
+                            else None
+                        ),
                         # Marginal plots (scatter only)
                         (
                             ui.flex(
@@ -5441,7 +6201,7 @@ def chart_builder_app() -> ui.Element:
                                 UNSAFE_style={"fontWeight": "bold"},
                             ),
                             ui.flex(
-                                # Render mode only for scatter/line
+                                # Render mode only for scatter/line/polar
                                 (
                                     ui.picker(
                                         ui.item("WebGL (faster)", key="webgl"),
@@ -5451,7 +6211,13 @@ def chart_builder_app() -> ui.Element:
                                         on_selection_change=set_render_mode,
                                         flex_grow=1,
                                     )
-                                    if chart_type in ("scatter", "line")
+                                    if chart_type
+                                    in (
+                                        "scatter",
+                                        "line",
+                                        "scatter_polar",
+                                        "line_polar",
+                                    )
                                     else None
                                 ),
                                 ui.picker(
@@ -5501,6 +6267,12 @@ def chart_builder_app() -> ui.Element:
                     "icicle",
                     "funnel",
                     "funnel_area",
+                    "scatter_3d",
+                    "line_3d",
+                    "scatter_polar",
+                    "line_polar",
+                    "scatter_ternary",
+                    "line_ternary",
                 )
                 else None
             ),
