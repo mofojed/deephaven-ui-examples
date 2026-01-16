@@ -456,9 +456,35 @@ The UI will be organized into sections:
     - `template`: Plotly template
   - Note: opacity, log_x, log_y omitted (less commonly used)
 
+#### Phase 14: Advanced Parameters - 3D/Polar/Ternary Charts ✅ COMPLETED
+
+Added comprehensive support for advanced chart parameters:
+
+- **3D Charts (scatter_3d, line_3d)**:
+  - Log Z axis option
+  - Error Z and Error Z Minus column pickers
+  - Text and hover name support
+  - Opacity control for scatter
+  - Markers and line dash for line
+
+- **Polar Charts (scatter_polar, line_polar)**:
+  - Direction (clockwise/counterclockwise)
+  - Start angle (0-360 degrees)
+  - Log R (radial axis) option
+  - Close line shape for line_polar
+  - Range R and Range Theta controls
+  - Symbol/Text/Hover Name pickers
+  - Render mode (webgl/svg/auto)
+
+- **Ternary Charts (scatter_ternary, line_ternary)**:
+  - Symbol/Text/Hover Name pickers
+  - Close line shape for line_ternary
+  - Show markers option
+
+- **E2E Tests**: 13 new tests covering all advanced options
+
 #### Future Phases (Planned)
 
-- **Phase 14**: Advanced Parameters - 3D/Polar/Ternary Charts
 - **Phase 15**: Advanced Parameters - Map/Geo Charts
 
 #### UI Layout Update
