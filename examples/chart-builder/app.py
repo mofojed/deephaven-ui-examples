@@ -2098,9 +2098,8 @@ def _column_picker_items(columns: list[dict], include_none: bool = True) -> list
         items.append(
             {
                 "key": "",
-                "label": "(None)",
+                "label": "",
                 "description": "",
-                "icon": "vsCircleSlash",
             }
         )
     items.extend(
@@ -2119,11 +2118,11 @@ def _render_column_picker_items(items: list[dict]) -> list:
     """Render column picker items with icons and descriptions."""
     return [
         ui.item(
-            ui.icon(item["icon"]),
+            ui.icon(item["icon"]) if item.get("icon") else None,
             ui.text(item["label"]),
             (
                 ui.text(item["description"], slot="description")
-                if item["description"]
+                if item.get("description")
                 else None
             ),
             key=item["key"],
@@ -2890,7 +2889,7 @@ def chart_builder(table: Table) -> ui.Element:
                         flex_grow=1,
                     ),
                     ui.picker(
-                        ui.item("(None)", key=""),
+                        ui.item("", key=""),
                         ui.item("ISO-3", key="ISO-3"),
                         ui.item("USA-states", key="USA-states"),
                         ui.item("Country names", key="country names"),
@@ -4483,7 +4482,7 @@ def chart_builder_app() -> ui.Element:
                         flex_grow=1,
                     ),
                     ui.picker(
-                        ui.item("(None)", key=""),
+                        ui.item("", key=""),
                         ui.item("ISO-3", key="ISO-3"),
                         ui.item("USA-states", key="USA-states"),
                         ui.item("Country names", key="country names"),
@@ -4977,7 +4976,7 @@ def chart_builder_app() -> ui.Element:
                                         flex_grow=1,
                                     ),
                                     ui.picker(
-                                        ui.item("(None)", key=""),
+                                        ui.item("", key=""),
                                         ui.item("Probability", key="probability"),
                                         ui.item("Percent", key="percent"),
                                         ui.item("Density", key="density"),
@@ -5004,7 +5003,7 @@ def chart_builder_app() -> ui.Element:
                                         flex_grow=1,
                                     ),
                                     ui.picker(
-                                        ui.item("(None)", key=""),
+                                        ui.item("", key=""),
                                         ui.item("Fraction", key="fraction"),
                                         ui.item("Percent", key="percent"),
                                         label="Bar Normalization",
@@ -5101,7 +5100,7 @@ def chart_builder_app() -> ui.Element:
                                         flex_grow=1,
                                     ),
                                     ui.picker(
-                                        ui.item("(None)", key=""),
+                                        ui.item("", key=""),
                                         ui.item("Outliers only", key="outliers"),
                                         ui.item(
                                             "Suspected outliers",
@@ -5287,7 +5286,7 @@ def chart_builder_app() -> ui.Element:
                         (
                             ui.flex(
                                 ui.picker(
-                                    ui.item("(None)", key=""),
+                                    ui.item("", key=""),
                                     ui.item("Histogram", key="histogram"),
                                     ui.item("Box", key="box"),
                                     ui.item("Violin", key="violin"),
@@ -5298,7 +5297,7 @@ def chart_builder_app() -> ui.Element:
                                     flex_grow=1,
                                 ),
                                 ui.picker(
-                                    ui.item("(None)", key=""),
+                                    ui.item("", key=""),
                                     ui.item("Histogram", key="histogram"),
                                     ui.item("Box", key="box"),
                                     ui.item("Violin", key="violin"),
