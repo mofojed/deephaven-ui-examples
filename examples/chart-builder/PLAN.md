@@ -171,7 +171,6 @@ Display a copyable Python code block below the chart that shows the exact code n
 #### Implementation Details
 
 1. **Code Generation Function**
-
    - Create `_generate_chart_code(config: ChartConfig, dataset_name: str) -> str`
    - Build the appropriate `dx.<chart_type>()` call with all set parameters
    - Include dataset loading code (e.g., `table = dx.data.iris()`)
@@ -179,7 +178,6 @@ Display a copyable Python code block below the chart that shows the exact code n
    - Omit parameters that are empty/default values
 
 2. **UI Component**
-
    - Add a section below the chart for generated code
    - Use `ui.markdown` with fenced code block for syntax highlighting
    - Add a "Copy" action button using `ui.action_button`
@@ -435,7 +433,6 @@ The UI will be organized into sections:
   - Strip: stripmode
   - All: log_x, log_y, template
 - **Phase 12**: ✅ Advanced Parameters - Financial Charts (candlestick, ohlc)
-
   - increasing_color_sequence: Custom color for up candles/bars (with color picker UI)
   - decreasing_color_sequence: Custom color for down candles/bars (with color picker UI)
   - Note: xaxis_titles/yaxis_titles are NOT supported due to a bug in dx.candlestick/dx.ohlc
@@ -483,9 +480,23 @@ Added comprehensive support for advanced chart parameters:
 
 - **E2E Tests**: 13 new tests covering all advanced options
 
-#### Future Phases (Planned)
+#### Phase 15: Advanced Parameters - Map/Geo Charts ✅
 
-- **Phase 15**: Advanced Parameters - Map/Geo Charts
+Added advanced options for map and geo charts:
+
+**Geo Charts (scatter_geo, line_geo):**
+
+- `projection`: Map projection type (equirectangular, mercator, orthographic, natural earth, albers usa)
+- `scope`: Geographic scope (world, usa, europe, asia, africa, north america, south america)
+- `fitbounds`: Auto-fit bounds option (locations, geojson)
+- `basemap_visible`: Show/hide basemap
+- `markers`: Show markers on line_geo
+
+**Tile-based Maps (scatter_map, density_map):**
+
+- `opacity`: Control opacity (0.1-1.0)
+
+**Note:** `line_map` does not support `opacity` or `markers` parameters per the Deephaven API.
 
 #### UI Layout Update
 

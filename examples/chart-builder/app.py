@@ -191,6 +191,14 @@ class ChartConfig(TypedDict):
     zoom: NotRequired[int]
     center: NotRequired[dict[str, float]]  # {"lat": float, "lon": float}
     map_style: NotRequired[str]
+    # Map/Geo advanced options (Phase 15)
+    geo_projection: NotRequired[str]  # Projection type for scatter_geo/line_geo
+    geo_scope: NotRequired[str]  # Geographic scope for scatter_geo/line_geo
+    geo_fitbounds: NotRequired[str]  # Fit bounds option (False, "locations", "geojson")
+    geo_basemap_visible: NotRequired[bool]  # Show/hide basemap
+    geo_markers: NotRequired[bool]  # Show markers on line_geo
+    map_opacity: NotRequired[float]  # Opacity for map charts
+    map_markers: NotRequired[bool]  # Show markers on line_map
 
 
 # =============================================================================
@@ -1095,6 +1103,23 @@ def _make_scatter_geo(table: Table, config: ChartConfig):
         kwargs["color"] = config["color"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 15)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("opacity") is not None:
+        kwargs["opacity"] = config["opacity"]
+    if config.get("geo_projection"):
+        kwargs["projection"] = config["geo_projection"]
+    if config.get("geo_scope"):
+        kwargs["scope"] = config["geo_scope"]
+    if config.get("geo_fitbounds"):
+        kwargs["fitbounds"] = config["geo_fitbounds"]
+    if config.get("geo_basemap_visible") is not None:
+        kwargs["basemap_visible"] = config["geo_basemap_visible"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.scatter_geo(table, **kwargs)
 
 
@@ -1115,6 +1140,23 @@ def _make_line_geo(table: Table, config: ChartConfig):
         kwargs["color"] = config["color"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 15)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("geo_markers"):
+        kwargs["markers"] = config["geo_markers"]
+    if config.get("geo_projection"):
+        kwargs["projection"] = config["geo_projection"]
+    if config.get("geo_scope"):
+        kwargs["scope"] = config["geo_scope"]
+    if config.get("geo_fitbounds"):
+        kwargs["fitbounds"] = config["geo_fitbounds"]
+    if config.get("geo_basemap_visible") is not None:
+        kwargs["basemap_visible"] = config["geo_basemap_visible"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.line_geo(table, **kwargs)
 
 
@@ -1135,6 +1177,15 @@ def _make_scatter_map(table: Table, config: ChartConfig):
         kwargs["map_style"] = config["map_style"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 15)
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("map_opacity") is not None:
+        kwargs["opacity"] = config["map_opacity"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.scatter_map(table, **kwargs)
 
 
@@ -1153,6 +1204,13 @@ def _make_line_map(table: Table, config: ChartConfig):
         kwargs["map_style"] = config["map_style"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 15) - Note: line_map does not support opacity or markers
+    if config.get("text"):
+        kwargs["text"] = config["text"]
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.line_map(table, **kwargs)
 
 
@@ -1171,6 +1229,13 @@ def _make_density_map(table: Table, config: ChartConfig):
         kwargs["map_style"] = config["map_style"]
     if config.get("title"):
         kwargs["title"] = config["title"]
+    # Advanced options (Phase 15)
+    if config.get("hover_name"):
+        kwargs["hover_name"] = config["hover_name"]
+    if config.get("map_opacity") is not None:
+        kwargs["opacity"] = config["map_opacity"]
+    if config.get("template"):
+        kwargs["template"] = config["template"]
     return dx.density_map(table, **kwargs)
 
 
@@ -1428,6 +1493,17 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'locations="{config["locations"]}"')
         if config.get("locationmode"):
             params.append(f'locationmode="{config["locationmode"]}"')
+        # Geo advanced options (Phase 15)
+        if config.get("geo_projection"):
+            params.append(f'projection="{config["geo_projection"]}"')
+        if config.get("geo_scope"):
+            params.append(f'scope="{config["geo_scope"]}"')
+        if config.get("geo_fitbounds"):
+            params.append(f'fitbounds="{config["geo_fitbounds"]}"')
+        if config.get("geo_basemap_visible") is False:
+            params.append("basemap_visible=False")
+        if chart_type == "line_geo" and config.get("geo_markers"):
+            params.append("markers=True")
 
     # Map charts (tile-based)
     if chart_type in ("scatter_map", "line_map", "density_map"):
@@ -1441,6 +1517,11 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
             params.append(f'center={_format_value(config["center"])}')
         if config.get("map_style"):
             params.append(f'map_style="{config["map_style"]}"')
+        # Map advanced options (Phase 15)
+        if config.get("map_opacity") is not None and config["map_opacity"] != 1.0:
+            params.append(f'opacity={config["map_opacity"]}')
+        if chart_type == "line_map" and config.get("map_markers"):
+            params.append("markers=True")
 
     # Density map specific
     if chart_type == "density_map":
@@ -1777,7 +1858,10 @@ def generate_chart_code(config: ChartConfig, dataset_name: str) -> str:
         # Polar-specific options
         if config.get("polar_direction"):
             params.append(f'direction="{config["polar_direction"]}"')
-        if config.get("polar_start_angle") is not None and config["polar_start_angle"] != 90:
+        if (
+            config.get("polar_start_angle") is not None
+            and config["polar_start_angle"] != 90
+        ):
             params.append(f'start_angle={config["polar_start_angle"]}')
         if config.get("polar_log_r"):
             params.append("log_r=True")
@@ -2683,6 +2767,17 @@ def chart_builder(table: Table) -> ui.Element:
         elif chart_type == "line_geo":
             if color_col:
                 config["color"] = color_col
+        # Geo advanced options
+        if geo_projection:
+            config["geo_projection"] = geo_projection
+        if geo_scope:
+            config["geo_scope"] = geo_scope
+        if geo_fitbounds:
+            config["geo_fitbounds"] = geo_fitbounds
+        if not geo_basemap_visible:
+            config["geo_basemap_visible"] = geo_basemap_visible
+        if chart_type == "line_geo" and geo_markers:
+            config["geo_markers"] = geo_markers
 
     # Tile-based map chart config (scatter_map, line_map, density_map)
     if chart_type in ("scatter_map", "line_map", "density_map"):
@@ -2708,16 +2803,28 @@ def chart_builder(table: Table) -> ui.Element:
                 config["size"] = size_col
             if color_col:
                 config["color"] = color_col
+            # Map opacity
+            if map_opacity is not None and map_opacity != 1.0:
+                config["map_opacity"] = map_opacity
         elif chart_type == "line_map":
             if by_cols:
                 config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
             if color_col:
                 config["color"] = color_col
+            # Map markers
+            if map_markers:
+                config["map_markers"] = map_markers
+            # Map opacity
+            if map_opacity is not None and map_opacity != 1.0:
+                config["map_opacity"] = map_opacity
         elif chart_type == "density_map":
             if z_col:
                 config["z"] = z_col
             if radius:
                 config["radius"] = radius
+            # Map opacity
+            if map_opacity is not None and map_opacity != 1.0:
+                config["map_opacity"] = map_opacity
 
     # Determine if chart can be created
     can_create_chart = False
@@ -3210,6 +3317,80 @@ def chart_builder(table: Table) -> ui.Element:
                 if chart_type == "line_geo"
                 else None
             ),
+            # Geo advanced options (scatter_geo, line_geo) - Phase 15
+            (
+                ui.flex(
+                    ui.text(
+                        "Geo Chart Options",
+                        UNSAFE_style={"fontWeight": "bold"},
+                    ),
+                    ui.flex(
+                        ui.picker(
+                            ui.item("(Default)", key=""),
+                            ui.item("Equirectangular", key="equirectangular"),
+                            ui.item("Mercator", key="mercator"),
+                            ui.item("Orthographic", key="orthographic"),
+                            ui.item("Natural Earth", key="natural earth"),
+                            ui.item("USA Albers", key="albers usa"),
+                            label="Projection",
+                            selected_key=geo_projection,
+                            on_selection_change=set_geo_projection,
+                            flex_grow=1,
+                        ),
+                        ui.picker(
+                            ui.item("(Default)", key=""),
+                            ui.item("World", key="world"),
+                            ui.item("USA", key="usa"),
+                            ui.item("Europe", key="europe"),
+                            ui.item("Asia", key="asia"),
+                            ui.item("Africa", key="africa"),
+                            ui.item("North America", key="north america"),
+                            ui.item("South America", key="south america"),
+                            label="Scope",
+                            selected_key=geo_scope,
+                            on_selection_change=set_geo_scope,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ),
+                    ui.flex(
+                        ui.picker(
+                            ui.item("(Default)", key=""),
+                            ui.item("Locations", key="locations"),
+                            ui.item("Geojson", key="geojson"),
+                            label="Fit Bounds",
+                            selected_key=geo_fitbounds,
+                            on_selection_change=set_geo_fitbounds,
+                            flex_grow=1,
+                        ),
+                        ui.checkbox(
+                            "Show Basemap",
+                            is_selected=geo_basemap_visible,
+                            on_change=set_geo_basemap_visible,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        align_items="center",
+                        width="100%",
+                    ),
+                    # Show Markers checkbox for line_geo only
+                    (
+                        ui.checkbox(
+                            "Show Markers",
+                            is_selected=geo_markers,
+                            on_change=set_geo_markers,
+                        )
+                        if chart_type == "line_geo"
+                        else None
+                    ),
+                    direction="column",
+                    gap="size-100",
+                )
+                if chart_type in ("scatter_geo", "line_geo")
+                else None
+            ),
             # Tile map chart controls (scatter_map, line_map, density_map)
             (
                 ui.flex(
@@ -3359,6 +3540,28 @@ def chart_builder(table: Table) -> ui.Element:
                     width="100%",
                 )
                 if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            # Map advanced options (Phase 15) - only scatter_map and density_map support opacity
+            (
+                ui.flex(
+                    ui.text(
+                        "Map Chart Options",
+                        UNSAFE_style={"fontWeight": "bold"},
+                    ),
+                    ui.slider(
+                        label="Opacity",
+                        value=map_opacity,
+                        on_change=set_map_opacity,
+                        min_value=0.1,
+                        max_value=1.0,
+                        step=0.1,
+                        width="100%",
+                    ),
+                    direction="column",
+                    gap="size-100",
+                )
+                if chart_type in ("scatter_map", "density_map")
                 else None
             ),
             # Group by (for charts that support it - not pie, density_heatmap, financial, or hierarchical)
@@ -3728,8 +3931,12 @@ def chart_builder_app() -> ui.Element:
     error_z_minus_col, set_error_z_minus_col = ui.use_state("")  # Error Z- column
 
     # Polar chart advanced options (Phase 14)
-    polar_direction, set_polar_direction = ui.use_state("")  # "clockwise" or "counterclockwise"
-    polar_start_angle, set_polar_start_angle = ui.use_state(90)  # Start angle in degrees
+    polar_direction, set_polar_direction = ui.use_state(
+        ""
+    )  # "clockwise" or "counterclockwise"
+    polar_start_angle, set_polar_start_angle = ui.use_state(
+        90
+    )  # Start angle in degrees
     polar_log_r, set_polar_log_r = ui.use_state(False)  # Logarithmic radial axis
     polar_line_close, set_polar_line_close = ui.use_state(False)  # Close line shape
     polar_range_r_min, set_polar_range_r_min = ui.use_state(cast(float | None, None))
@@ -3743,6 +3950,15 @@ def chart_builder_app() -> ui.Element:
 
     # Ternary chart advanced options (Phase 14)
     ternary_line_close, set_ternary_line_close = ui.use_state(False)  # Close line shape
+
+    # Map/Geo chart advanced options (Phase 15)
+    geo_projection, set_geo_projection = ui.use_state("")  # Projection type
+    geo_scope, set_geo_scope = ui.use_state("")  # Geographic scope
+    geo_fitbounds, set_geo_fitbounds = ui.use_state("")  # Fit bounds option
+    geo_basemap_visible, set_geo_basemap_visible = ui.use_state(True)  # Show basemap
+    geo_markers, set_geo_markers = ui.use_state(False)  # Show markers on line_geo
+    map_opacity, set_map_opacity = ui.use_state(1.0)  # Opacity for map charts
+    map_markers, set_map_markers = ui.use_state(False)  # Show markers on line_map
 
     # Rendering options
     render_mode, set_render_mode = ui.use_state("webgl")
@@ -4293,6 +4509,17 @@ def chart_builder_app() -> ui.Element:
         elif chart_type == "line_geo":
             if color_col:
                 config["color"] = color_col
+        # Geo advanced options
+        if geo_projection:
+            config["geo_projection"] = geo_projection
+        if geo_scope:
+            config["geo_scope"] = geo_scope
+        if geo_fitbounds:
+            config["geo_fitbounds"] = geo_fitbounds
+        if not geo_basemap_visible:
+            config["geo_basemap_visible"] = geo_basemap_visible
+        if chart_type == "line_geo" and geo_markers:
+            config["geo_markers"] = geo_markers
 
     # Tile-based map chart config (scatter_map, line_map, density_map)
     if chart_type in ("scatter_map", "line_map", "density_map"):
@@ -4318,16 +4545,28 @@ def chart_builder_app() -> ui.Element:
                 config["size"] = size_col
             if color_col:
                 config["color"] = color_col
+            # Map opacity
+            if map_opacity is not None and map_opacity != 1.0:
+                config["map_opacity"] = map_opacity
         elif chart_type == "line_map":
             if by_cols:
                 config["by"] = by_cols[0] if len(by_cols) == 1 else by_cols
             if color_col:
                 config["color"] = color_col
+            # Map markers
+            if map_markers:
+                config["map_markers"] = map_markers
+            # Map opacity
+            if map_opacity is not None and map_opacity != 1.0:
+                config["map_opacity"] = map_opacity
         elif chart_type == "density_map":
             if z_col:
                 config["z"] = z_col
             if radius:
                 config["radius"] = radius
+            # Map opacity
+            if map_opacity is not None and map_opacity != 1.0:
+                config["map_opacity"] = map_opacity
 
     # Determine if chart can be created
     can_create_chart = False
@@ -4904,6 +5143,80 @@ def chart_builder_app() -> ui.Element:
                 if chart_type == "line_geo"
                 else None
             ),
+            # Geo advanced options (scatter_geo, line_geo) - Phase 15
+            (
+                ui.flex(
+                    ui.text(
+                        "Geo Chart Options",
+                        UNSAFE_style={"fontWeight": "bold"},
+                    ),
+                    ui.flex(
+                        ui.picker(
+                            ui.item("(Default)", key=""),
+                            ui.item("Equirectangular", key="equirectangular"),
+                            ui.item("Mercator", key="mercator"),
+                            ui.item("Orthographic", key="orthographic"),
+                            ui.item("Natural Earth", key="natural earth"),
+                            ui.item("USA Albers", key="albers usa"),
+                            label="Projection",
+                            selected_key=geo_projection,
+                            on_selection_change=set_geo_projection,
+                            flex_grow=1,
+                        ),
+                        ui.picker(
+                            ui.item("(Default)", key=""),
+                            ui.item("World", key="world"),
+                            ui.item("USA", key="usa"),
+                            ui.item("Europe", key="europe"),
+                            ui.item("Asia", key="asia"),
+                            ui.item("Africa", key="africa"),
+                            ui.item("North America", key="north america"),
+                            ui.item("South America", key="south america"),
+                            label="Scope",
+                            selected_key=geo_scope,
+                            on_selection_change=set_geo_scope,
+                            flex_grow=1,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        width="100%",
+                    ),
+                    ui.flex(
+                        ui.picker(
+                            ui.item("(Default)", key=""),
+                            ui.item("Locations", key="locations"),
+                            ui.item("Geojson", key="geojson"),
+                            label="Fit Bounds",
+                            selected_key=geo_fitbounds,
+                            on_selection_change=set_geo_fitbounds,
+                            flex_grow=1,
+                        ),
+                        ui.checkbox(
+                            "Show Basemap",
+                            is_selected=geo_basemap_visible,
+                            on_change=set_geo_basemap_visible,
+                        ),
+                        direction="row",
+                        gap="size-100",
+                        align_items="center",
+                        width="100%",
+                    ),
+                    # Show Markers checkbox for line_geo only
+                    (
+                        ui.checkbox(
+                            "Show Markers",
+                            is_selected=geo_markers,
+                            on_change=set_geo_markers,
+                        )
+                        if chart_type == "line_geo"
+                        else None
+                    ),
+                    direction="column",
+                    gap="size-100",
+                )
+                if chart_type in ("scatter_geo", "line_geo")
+                else None
+            ),
             # Tile map chart controls (scatter_map, line_map, density_map)
             (
                 ui.flex(
@@ -5053,6 +5366,28 @@ def chart_builder_app() -> ui.Element:
                     width="100%",
                 )
                 if chart_type in ("scatter_map", "line_map", "density_map")
+                else None
+            ),
+            # Map advanced options (Phase 15) - only scatter_map and density_map support opacity
+            (
+                ui.flex(
+                    ui.text(
+                        "Map Chart Options",
+                        UNSAFE_style={"fontWeight": "bold"},
+                    ),
+                    ui.slider(
+                        label="Opacity",
+                        value=map_opacity,
+                        on_change=set_map_opacity,
+                        min_value=0.1,
+                        max_value=1.0,
+                        step=0.1,
+                        width="100%",
+                    ),
+                    direction="column",
+                    gap="size-100",
+                )
+                if chart_type in ("scatter_map", "density_map")
                 else None
             ),
             # Group by (for charts that support it - not pie, density_heatmap, OHLC, or hierarchical charts)
@@ -5924,7 +6259,9 @@ def chart_builder_app() -> ui.Element:
                                 ui.picker(
                                     ui.item("(Default)", key=""),
                                     ui.item("Clockwise", key="clockwise"),
-                                    ui.item("Counter-clockwise", key="counterclockwise"),
+                                    ui.item(
+                                        "Counter-clockwise", key="counterclockwise"
+                                    ),
                                     label="Direction",
                                     selected_key=polar_direction,
                                     on_selection_change=set_polar_direction,

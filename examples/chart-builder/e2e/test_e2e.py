@@ -718,8 +718,8 @@ class TestAdvancedOptionsE2E:
         expect(marginal_x.first).to_be_visible()
 
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
-    def test_advanced_options_not_visible_for_bar(self, advanced_options_page: Page):
-        """Test that Advanced Options is NOT visible for bar charts."""
+    def test_advanced_options_visible_for_bar(self, advanced_options_page: Page):
+        """Test that Advanced Options IS visible for bar charts."""
         page = advanced_options_page
 
         # Switch to bar chart
@@ -728,9 +728,9 @@ class TestAdvancedOptionsE2E:
         page.get_by_test_id("popover").get_by_text("Bar", exact=True).click()
         page.wait_for_timeout(500)
 
-        # Advanced Options should NOT be visible for bar charts
+        # Advanced Options should be visible for bar charts (Phase 10 added options)
         advanced_options = page.get_by_role("button", name="Advanced Options")
-        expect(advanced_options).not_to_be_visible()
+        expect(advanced_options).to_be_visible()
 
     @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
     def test_advanced_options_visible_for_line(self, advanced_options_page: Page):
@@ -1991,3 +1991,211 @@ class TestLineTernaryAdvancedOptionsE2E:
 
         # Verify markers checkbox is visible
         expect(page.get_by_text("Show Markers", exact=True)).to_be_visible()
+
+
+# Phase 15: Map/Geo Advanced Options Tests
+
+
+@pytest.mark.e2e
+class TestGeoChartAdvancedOptionsE2E:
+    """Tests for geo chart (scatter_geo, line_geo) advanced options (Phase 15)."""
+
+    @pytest.fixture
+    def flights_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget and select Flights dataset."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+
+        # Select the Flights sample dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Flights").click()
+        page.wait_for_timeout(1000)
+
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_geo_projection_picker_visible(self, flights_page: Page):
+        """Test that Projection picker is visible for scatter_geo."""
+        page = flights_page
+
+        # Select Scatter Geo chart type
+        select_chart_type(page, "Scatter Geo")
+        page.wait_for_timeout(500)
+
+        # Verify Geo Chart Options section is visible
+        expect(page.get_by_text("Geo Chart Options")).to_be_visible()
+
+        # Verify Projection picker is visible
+        projection_picker = (
+            page.get_by_label("Projection").locator("visible=true").first
+        )
+        expect(projection_picker).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_geo_scope_picker_visible(self, flights_page: Page):
+        """Test that Scope picker is visible for scatter_geo."""
+        page = flights_page
+
+        # Select Scatter Geo chart type
+        select_chart_type(page, "Scatter Geo")
+        page.wait_for_timeout(500)
+
+        # Verify Scope picker is visible
+        scope_picker = page.get_by_label("Scope").locator("visible=true").first
+        expect(scope_picker).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_geo_fitbounds_picker_visible(self, flights_page: Page):
+        """Test that Fit Bounds picker is visible for scatter_geo."""
+        page = flights_page
+
+        # Select Scatter Geo chart type
+        select_chart_type(page, "Scatter Geo")
+        page.wait_for_timeout(500)
+
+        # Verify Fit Bounds picker is visible
+        fitbounds_picker = page.get_by_label("Fit Bounds").locator("visible=true").first
+        expect(fitbounds_picker).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_geo_basemap_checkbox_visible(self, flights_page: Page):
+        """Test that Show Basemap checkbox is visible for scatter_geo."""
+        page = flights_page
+
+        # Select Scatter Geo chart type
+        select_chart_type(page, "Scatter Geo")
+        page.wait_for_timeout(500)
+
+        # Verify Show Basemap checkbox is visible
+        expect(page.get_by_text("Show Basemap", exact=True)).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_geo_markers_checkbox_visible(self, flights_page: Page):
+        """Test that Show Markers checkbox is visible for line_geo."""
+        page = flights_page
+
+        # Select Line Geo chart type
+        select_chart_type(page, "Line Geo")
+        page.wait_for_timeout(500)
+
+        # Verify Geo Chart Options section is visible
+        expect(page.get_by_text("Geo Chart Options")).to_be_visible()
+
+        # Verify Show Markers checkbox is visible
+        expect(page.get_by_text("Show Markers", exact=True)).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_geo_projection_picker_visible(self, flights_page: Page):
+        """Test that Projection picker is visible for line_geo."""
+        page = flights_page
+
+        # Select Line Geo chart type
+        select_chart_type(page, "Line Geo")
+        page.wait_for_timeout(500)
+
+        # Verify Projection picker is visible
+        projection_picker = (
+            page.get_by_label("Projection").locator("visible=true").first
+        )
+        expect(projection_picker).to_be_visible()
+
+
+@pytest.mark.e2e
+class TestMapChartAdvancedOptionsE2E:
+    """Tests for tile-based map chart (scatter_map, line_map, density_map) advanced options (Phase 15)."""
+
+    @pytest.fixture
+    def outages_page(self, page: Page) -> Page:
+        """Navigate to the chart_builder_demo widget and select Outages dataset."""
+        url = f"{BASE_URL}/iframe/widget/?name=chart_builder_demo&psk={PSK}"
+        page.goto(url, timeout=30000)
+        # Wait for the chart builder UI to load
+        page.get_by_text("Chart Type", exact=True).wait_for(timeout=5000)
+        # Wait a bit more for all pickers to render
+        page.wait_for_timeout(1000)
+
+        # Select the Outages sample dataset
+        dataset_picker = page.locator("button:has-text('Iris')")
+        dataset_picker.click()
+        page.get_by_test_id("popover").get_by_text("Outages").click()
+        page.wait_for_timeout(1000)
+
+        return page
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_scatter_map_opacity_slider_visible(self, outages_page: Page):
+        """Test that Opacity slider is visible for scatter_map."""
+        page = outages_page
+
+        # Select Scatter Map chart type
+        select_chart_type(page, "Scatter Map")
+        page.wait_for_timeout(500)
+
+        # Verify Map Chart Options section is visible
+        expect(page.get_by_text("Map Chart Options")).to_be_visible()
+
+        # Verify Opacity slider is visible
+        opacity_slider = page.get_by_label("Opacity").locator("visible=true").first
+        expect(opacity_slider).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_map_markers_checkbox_visible(self, outages_page: Page):
+        """Test that Show Markers checkbox is visible for line_map."""
+        page = outages_page
+
+        # Select Line Map chart type
+        select_chart_type(page, "Line Map")
+        page.wait_for_timeout(500)
+
+        # Verify Map Chart Options section is visible
+        expect(page.get_by_text("Map Chart Options")).to_be_visible()
+
+        # Verify Show Markers checkbox is visible
+        expect(page.get_by_text("Show Markers", exact=True)).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_line_map_opacity_slider_visible(self, outages_page: Page):
+        """Test that Opacity slider is visible for line_map."""
+        page = outages_page
+
+        # Select Line Map chart type
+        select_chart_type(page, "Line Map")
+        page.wait_for_timeout(500)
+
+        # Verify Opacity slider is visible
+        opacity_slider = page.get_by_label("Opacity").locator("visible=true").first
+        expect(opacity_slider).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_density_map_opacity_slider_visible(self, outages_page: Page):
+        """Test that Opacity slider is visible for density_map."""
+        page = outages_page
+
+        # Select Density Map chart type
+        select_chart_type(page, "Density Map")
+        page.wait_for_timeout(500)
+
+        # Verify Map Chart Options section is visible
+        expect(page.get_by_text("Map Chart Options")).to_be_visible()
+
+        # Verify Opacity slider is visible
+        opacity_slider = page.get_by_label("Opacity").locator("visible=true").first
+        expect(opacity_slider).to_be_visible()
+
+    @pytest.mark.skipif(not PSK, reason="DH_PSK environment variable not set")
+    def test_density_map_no_markers_checkbox(self, outages_page: Page):
+        """Test that Show Markers checkbox is NOT visible for density_map."""
+        page = outages_page
+
+        # Select Density Map chart type
+        select_chart_type(page, "Density Map")
+        page.wait_for_timeout(500)
+
+        # Verify Show Markers checkbox is NOT visible for density_map
+        markers_checkbox = page.get_by_text("Show Markers", exact=True)
+        expect(markers_checkbox).not_to_be_visible()
